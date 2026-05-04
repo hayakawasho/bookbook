@@ -50,3 +50,12 @@ bookbook — Web フロントエンドアプリケーション
 ## プロジェクト固有ルール
 
 (プロジェクト固有の規約が決まったら記載)
+
+## 参照ドキュメント
+
+- [設計・アーキテクチャ](../../DESIGN.md) — プロジェクトの設計意図
+- [プロジェクト固有ルール](rules/project.md) — ドメイン制約・禁止事項
+
+## Agent Skills
+
+- [/CMD_review](skills/CMD_review/SKILL.md) — PR レビュー
