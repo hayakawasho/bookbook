@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@theme {
+  /* Light mode tokens (§2 Color Palette) — default */
+  --color-primary: #1C1F22;
+  --color-primary-contrast: #FFFFFF;
+  --color-accent: #DEFF00;
+  --color-background: #F2F2F2;
+  --color-surface: #FFFFFF;
+  --color-text: #1C1F22;
+  --color-text-muted: #6E6E6E;
+  --color-border: #DFDFDF;
+  --color-middle: #AAAAAA;
+  --color-error: #F2546C;
+  --color-success: #1873E6;
+
+  /* Typography (§3) */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Dark mode tokens — Mock state via data-theme only (§2, Phase 1) */
+:root[data-theme="dark"] {
+  --color-primary: #FFFFFF;
+  --color-primary-contrast: #1C1F22;
+  --color-background: #1C1F22;
+  --color-surface: #000000;
+  --color-text: #FFFFFF;
+  --color-text-muted: #868686;
+  --color-border: #363636;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-background);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Desktop: show app frame against darker background (§8 Responsive) */
+@media (min-width: 640px) {
+  body {
+    background-color: #333;
+  }
+}
+
+:root[data-theme="dark"] body {
+  background-color: var(--color-background);
+}
+
+@media (min-width: 640px) {
+  :root[data-theme="dark"] body {
+    background-color: #111;
+  }
+}
+
+/* Focus / placeholder — Tailwind では variant 展開が困難なので残す */
+input.isbn-input::placeholder,
+input.search-input::placeholder {
+  color: var(--color-middle);
+}
+input.isbn-input:focus,
+input.search-input:focus {
+  border-bottom-color: var(--color-success);
+}
+
+/* Range input (音量) — ノブを success 色に */
+input.volume-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;
+  background: transparent;
+}
+input.volume-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--color-border);
+}
+input.volume-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+input.volume-range::-moz-range-track {
+  height: 2px;
+  background: var(--color-border);
+}
+input.volume-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-success);
+  border: 2px solid var(--color-surface);
+}
