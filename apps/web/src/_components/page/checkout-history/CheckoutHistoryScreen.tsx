@@ -1,6 +1,5 @@
 import { SettingsScreen } from '../settings/SettingsScreen'
 import { Header } from '../../ui/Header'
-import { Dialog } from '../../ui/Dialog'
 import { Toast } from '../../ui/Toast'
 import { IconCog } from '../../ui/icon'
 import { HistoryList } from './HistoryList'
@@ -10,11 +9,9 @@ import { useCheckoutHistoryScreen } from './useCheckoutHistoryScreen'
 export function CheckoutHistoryScreen() {
   const {
     borrowing,
-    dialogConfig,
     handleReturn,
     historySubTab,
     returned,
-    setDialogConfig,
     setHistorySubTab,
     setSettingsOpen,
     setToast,
@@ -53,23 +50,6 @@ export function CheckoutHistoryScreen() {
         returned={returned}
         onReturn={handleReturn}
       />
-
-      {dialogConfig && (
-        <Dialog
-          message={dialogConfig.message}
-          confirmLabel={dialogConfig.confirmLabel}
-          cancelLabel={dialogConfig.cancelLabel ?? 'キャンセル'}
-          width={dialogConfig.width}
-          onConfirm={dialogConfig.onConfirm}
-          onCancel={() => {
-            if (dialogConfig.onCancel) {
-              dialogConfig.onCancel()
-            } else {
-              setDialogConfig(null)
-            }
-          }}
-        />
-      )}
 
       {toast && (
         <Toast
