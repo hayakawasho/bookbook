@@ -751,16 +751,29 @@ app.patch('/api/books/:isbn/count', async c => {
   return c.json({ ok: true })
 })
 
+/** microCMS 一覧 GET の filters: ログインユーザーの borrower_email とオプションの is_done */
+function historyListFilters(email: string, isDone?: string): string {
+  const borrower = `borrower_email[equals]${email}`
+  if (isDone !== undefined) {
+    return `${borrower}[and]is_done[equals]${isDone}`
+  }
+  return borrower
+}
+
 // GET /api/history?location=&isDone=
 app.get('/api/history', async c => {
+  const sessionUser = c.get('sessionUser')
   const { location, isDone } = c.req.query()
   if (!location) return c.json({ error: 'location is required' }, 400)
 
   const cms = requireCmsEnv(c.env, location)
   if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
-  const params = new URLSearchParams({ limit: '100', depth: '2' })
-  if (isDone !== undefined) params.set('filters', `is_done[equals]${isDone}`)
+  const params = new URLSearchParams({
+    limit: '100',
+    depth: '2',
+    filters: historyListFilters(sessionUser.email, isDone),
+  })
 
   const res = await fetch(`${cms.baseUrl}/history?${params}`, { headers: cmsHeaders(cms.apiKey) })
   if (!res.ok) return c.json({ error: 'microCMS request failed' }, 502)
@@ -816,11 +829,23 @@ app.post('/api/history', async c => {
 
 // PATCH /api/history/:id
 app.patch('/api/history/:id', async c => {
+  const sessionUser = c.get('sessionUser')
   const id = c.req.param('id')
   const { location } = await c.req.json<{ isbn: string; location: string }>()
 
   const cms = requireCmsEnv(c.env, location)
   if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+
+  const existingRes = await fetch(`${cms.baseUrl}/history/${id}`, {
+    headers: cmsHeaders(cms.apiKey),
+  })
+  if (!existingRes.ok) return c.json({ error: 'microCMS request failed' }, 502)
+  const existing = (await existingRes.json()) as MicroCMSHistory
+  const recordEmail = (existing.borrower_email ?? '').trim().toLowerCase()
+  const sessionEmail = sessionUser.email.trim().toLowerCase()
+  if (recordEmail !== sessionEmail) {
+    return c.json({ error: 'forbidden' }, 403)
+  }
 
   const res = await fetch(`${cms.baseUrl}/history/${id}`, {
     method: 'PATCH',
@@ -831,8 +856,14 @@ app.patch('/api/history/:id', async c => {
   return c.json({ ok: true })
 })
 
+function checkoutBorrowerSlackLabel(user: SessionUser): string {
+  const name = user.name?.trim()
+  return name ? name : user.email
+}
+
 // POST /api/notifications/slack
 app.post('/api/notifications/slack', async c => {
+  const sessionUser = c.get('sessionUser')
   if (!c.env.SLACK_WEBHOOK_URL) {
     // Slack未設定はサイレントスキップ
     return c.json({ ok: true, skipped: true })
@@ -849,7 +880,10 @@ app.post('/api/notifications/slack', async c => {
     return: '返却',
     'new-book': '新規登録',
   }
-  const text = `[${location}] 📚 ${actionLabel[type] ?? type}: ${book.title}${book.author ? ` / ${book.author}` : ''}`
+  let text = `[${location}] 📚 ${actionLabel[type] ?? type}: ${book.title}${book.author ? ` / ${book.author}` : ''}`
+  if (type === 'checkout') {
+    text += ` · ${checkoutBorrowerSlackLabel(sessionUser)}`
+  }
 
   const res = await fetch(c.env.SLACK_WEBHOOK_URL, {
     method: 'POST',

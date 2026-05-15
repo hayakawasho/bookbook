@@ -23,6 +23,11 @@ const AUTH_TEST_ENV = {
   ALLOWED_EMAIL_DOMAINS: 'example.com',
 }
 
+const SLACK_NOTIFY_ENV = {
+  ...TEST_ENV,
+  SLACK_WEBHOOK_URL: 'https://hooks.slack.test/services/xxx',
+}
+
 describe('GET /api/auth/google/start', () => {
   it('OAuth 未設定時は 503', async () => {
     const res = await app.fetch(new Request('http://localhost/api/auth/google/start'), TEST_ENV)
@@ -312,5 +317,237 @@ describe('POST /api/history', () => {
     const json = (await res.json()) as { borrowerEmail: string; borrowerName?: string }
     expect(json.borrowerEmail).toBe('user@example.com')
     expect(json.borrowerName).toBe('Tester')
+  })
+})
+
+describe('GET /api/history', () => {
+  let sessionCookie: string
+
+  beforeEach(async () => {
+    vi.restoreAllMocks()
+    const token = await signSession(
+      TEST_ENV.AUTH_COOKIE_SECRET,
+      { email: 'user@example.com', name: 'Tester', hd: 'example.com' },
+      3600,
+    )
+    sessionCookie = `bookbook_session=${token}`
+  })
+
+  it('microCMS 検索にログインユーザーの borrower_email と一致する filters を付ける', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ contents: [], totalCount: 0, offset: 0, limit: 100 }), {
+          status: 200,
+        }),
+      ),
+    )
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/history?location=daikanyama', {
+        headers: { Cookie: sessionCookie },
+      }),
+      TEST_ENV,
+    )
+
+    expect(res.status).toBe(200)
+    const url = String(vi.mocked(globalThis.fetch).mock.calls[0][0])
+    const filters = new URL(url).searchParams.get('filters')
+    expect(filters).toContain('borrower_email[equals]user@example.com')
+    expect(filters).not.toContain('[and]is_done')
+  })
+
+  it('isDone 指定時は borrower_email と is_done を AND で指定する', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ contents: [], totalCount: 0, offset: 0, limit: 100 }), {
+          status: 200,
+        }),
+      ),
+    )
+
+    await app.fetch(
+      new Request('http://localhost/api/history?location=daikanyama&isDone=false', {
+        headers: { Cookie: sessionCookie },
+      }),
+      TEST_ENV,
+    )
+
+    const url = String(vi.mocked(globalThis.fetch).mock.calls[0][0])
+    const filters = new URL(url).searchParams.get('filters')
+    expect(filters).toBe('borrower_email[equals]user@example.com[and]is_done[equals]false')
+  })
+})
+
+describe('PATCH /api/history/:id', () => {
+  let sessionCookie: string
+
+  beforeEach(async () => {
+    vi.restoreAllMocks()
+    const token = await signSession(
+      TEST_ENV.AUTH_COOKIE_SECRET,
+      { email: 'user@example.com', name: 'Tester', hd: 'example.com' },
+      3600,
+    )
+    sessionCookie = `bookbook_session=${token}`
+  })
+
+  it('borrower_email がセッションと異なる履歴は 403（PATCH しない）', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 'h1', borrower_email: 'other@example.com' }), {
+          status: 200,
+        }),
+      ),
+    )
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/history/h1', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: sessionCookie,
+        },
+        body: JSON.stringify({ isbn: '9784003101018', location: 'daikanyama' }),
+      }),
+      TEST_ENV,
+    )
+
+    expect(res.status).toBe(403)
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(1)
+  })
+
+  it('borrower_email が一致すれば microCMS を PATCH する', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ id: 'h1', borrower_email: 'user@example.com' }), {
+            status: 200,
+          }),
+        )
+        .mockResolvedValueOnce(new Response('{}', { status: 200 })),
+    )
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/history/h1', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: sessionCookie,
+        },
+        body: JSON.stringify({ isbn: '9784003101018', location: 'daikanyama' }),
+      }),
+      TEST_ENV,
+    )
+
+    expect(res.status).toBe(200)
+    const mockFetch = vi.mocked(globalThis.fetch)
+    expect(mockFetch.mock.calls.length).toBe(2)
+    const [, patchInit] = mockFetch.mock.calls[1]!
+    expect((patchInit as RequestInit).method).toBe('PATCH')
+  })
+})
+
+describe('POST /api/notifications/slack', () => {
+  it('貸出では Slack 本文にログインユーザーの名前を付ける（あるとき）', async () => {
+    vi.restoreAllMocks()
+    const token = await signSession(
+      TEST_ENV.AUTH_COOKIE_SECRET,
+      { email: 'user@example.com', name: '山田太郎', hd: 'example.com' },
+      3600,
+    )
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('ok', { status: 200 })))
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/notifications/slack', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `bookbook_session=${token}`,
+        },
+        body: JSON.stringify({
+          type: 'checkout',
+          location: 'daikanyama',
+          book: { title: 'サンプル本', isbn: '9784003101018', author: '著者' },
+        }),
+      }),
+      SLACK_NOTIFY_ENV,
+    )
+
+    expect(res.status).toBe(200)
+    const [, slackInit] = vi.mocked(globalThis.fetch).mock.calls[0]!
+    const body = JSON.parse((slackInit as RequestInit).body as string) as { text: string }
+    expect(body.text).toContain('貸出')
+    expect(body.text).toContain('サンプル本')
+    expect(body.text).toContain('山田太郎')
+    expect(body.text).not.toContain('user@example.com')
+  })
+
+  it('貸出で名前がないときはメールを付ける', async () => {
+    vi.restoreAllMocks()
+    const token = await signSession(
+      TEST_ENV.AUTH_COOKIE_SECRET,
+      { email: 'nomailname@example.com', hd: 'example.com' },
+      3600,
+    )
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('ok', { status: 200 })))
+
+    await app.fetch(
+      new Request('http://localhost/api/notifications/slack', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `bookbook_session=${token}`,
+        },
+        body: JSON.stringify({
+          type: 'checkout',
+          location: 'daikanyama',
+          book: { title: '本', isbn: '1' },
+        }),
+      }),
+      SLACK_NOTIFY_ENV,
+    )
+
+    const [, slackInit] = vi.mocked(globalThis.fetch).mock.calls[0]!
+    const body = JSON.parse((slackInit as RequestInit).body as string) as { text: string }
+    expect(body.text).toContain('nomailname@example.com')
+  })
+
+  it('返却通知には借り手サフィックスを付けない', async () => {
+    vi.restoreAllMocks()
+    const token = await signSession(
+      TEST_ENV.AUTH_COOKIE_SECRET,
+      { email: 'user@example.com', name: 'Tester', hd: 'example.com' },
+      3600,
+    )
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('ok', { status: 200 })))
+
+    await app.fetch(
+      new Request('http://localhost/api/notifications/slack', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `bookbook_session=${token}`,
+        },
+        body: JSON.stringify({
+          type: 'return',
+          location: 'daikanyama',
+          book: { title: '本', isbn: '1' },
+        }),
+      }),
+      SLACK_NOTIFY_ENV,
+    )
+
+    const [, slackInit] = vi.mocked(globalThis.fetch).mock.calls[0]!
+    const body = JSON.parse((slackInit as RequestInit).body as string) as { text: string }
+    expect(body.text).toBe('[daikanyama] 📚 返却: 本')
+    expect(body.text).not.toContain('Tester')
   })
 })
