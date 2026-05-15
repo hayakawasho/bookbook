@@ -7,7 +7,7 @@ let idCounter = 1
 
 function historySnapshotFromBook(
   book: BookMetadata,
-): Omit<HistoryMetadata, 'historyId' | 'checkoutDate' | 'isDone' | 'returnDate'> {
+): Omit<HistoryMetadata, 'historyId' | 'checkoutDate' | 'isDone' | 'returnDate' | 'borrowerEmail' | 'borrowerName'> {
   return {
     isbn: book.isbn,
     title: book.title,
@@ -47,6 +47,8 @@ export class MockHistoryRepository implements HistoryRepository {
       historyId: String(idCounter++),
       checkoutDate: new Date(),
       isDone: false,
+      borrowerEmail: 'mock@local.dev',
+      borrowerName: 'Mock',
     }
     this.histories.push(record)
     return record

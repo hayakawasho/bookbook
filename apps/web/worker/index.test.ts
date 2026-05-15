@@ -23,14 +23,6 @@ const AUTH_TEST_ENV = {
   ALLOWED_EMAIL_DOMAINS: 'example.com',
 }
 
-function postBooks(body: object) {
-  return new Request('http://localhost/api/books', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
-
 describe('GET /api/auth/google/start', () => {
   it('OAuth 未設定時は 503', async () => {
     const res = await app.fetch(new Request('http://localhost/api/auth/google/start'), TEST_ENV)
@@ -78,8 +70,48 @@ describe('GET /api/auth/me', () => {
 })
 
 describe('POST /api/books', () => {
-  beforeEach(() => {
+  let sessionCookie: string
+
+  beforeEach(async () => {
     vi.restoreAllMocks()
+    const token = await signSession(
+      TEST_ENV.AUTH_COOKIE_SECRET,
+      { email: 'user@example.com', name: 'Tester', hd: 'example.com' },
+      3600,
+    )
+    sessionCookie = `bookbook_session=${token}`
+  })
+
+  function postBooks(body: object, opts?: { omitCookie?: boolean }) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (!opts?.omitCookie) {
+      headers.Cookie = sessionCookie
+    }
+    return new Request('http://localhost/api/books', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+  }
+
+  it('セッション Cookie なしは 401（microCMS へは到達しない）', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+
+    const res = await app.fetch(
+      postBooks(
+        {
+          isbn: '1111111111111',
+          title: '未認証',
+          cover: {},
+          location: 'daikanyama',
+        },
+        { omitCookie: true },
+      ),
+      TEST_ENV,
+    )
+
+    expect(res.status).toBe(401)
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled()
   })
 
   it('cover あり: microCMS に fieldId 付きの cover_metadata を送り 201 を返す', async () => {
@@ -197,5 +229,88 @@ describe('POST /api/books', () => {
     const body = (await res.json()) as Record<string, unknown>
     expect(body.upstreamStatus).toBe(400)
     expect(body.upstreamBody).toBe('INVALID_FIELD')
+  })
+})
+
+describe('POST /api/history', () => {
+  let sessionCookie: string
+
+  beforeEach(async () => {
+    vi.restoreAllMocks()
+    const token = await signSession(
+      TEST_ENV.AUTH_COOKIE_SECRET,
+      { email: 'user@example.com', name: 'Tester', hd: 'example.com' },
+      3600,
+    )
+    sessionCookie = `bookbook_session=${token}`
+  })
+
+  it('microCMS への作成ペイロードに borrower_email / borrower_name を含める', async () => {
+    const microCMSBook = {
+      id: '9784003101018',
+      total: 1,
+      available_count: 1,
+      title: 'サンプル本',
+    }
+
+    const listBooksBody = JSON.stringify({
+      contents: [microCMSBook],
+      totalCount: 1,
+      offset: 0,
+      limit: 1,
+    })
+
+    const detailBody = JSON.stringify({
+      id: 'hist-new-1',
+      createdAt: '2026-01-15T12:00:00.000Z',
+      isbn: '9784003101018',
+      is_done: false,
+      borrower_email: 'user@example.com',
+      borrower_name: 'Tester',
+      book_metadata: [microCMSBook],
+    })
+
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(listBooksBody, { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'hist-new-1' }), { status: 201 }))
+        .mockResolvedValueOnce(new Response(detailBody, { status: 200 })),
+    )
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: sessionCookie,
+        },
+        body: JSON.stringify({ isbn: '9784003101018', location: 'daikanyama' }),
+      }),
+      TEST_ENV,
+    )
+
+    expect(res.status).toBe(201)
+
+    const mockFetch = vi.mocked(globalThis.fetch)
+    const historyPostCall = mockFetch.mock.calls.find(args => {
+      const init = args[1] as RequestInit | undefined
+      if (init?.method !== 'POST' || typeof init.body !== 'string') return false
+      try {
+        const j = JSON.parse(init.body) as Record<string, unknown>
+        return j.borrower_email !== undefined && Array.isArray(j.book_metadata)
+      } catch {
+        return false
+      }
+    })
+    expect(historyPostCall).toBeDefined()
+    const sentBody = JSON.parse((historyPostCall![1] as RequestInit).body as string)
+    expect(sentBody.borrower_email).toBe('user@example.com')
+    expect(sentBody.borrower_name).toBe('Tester')
+
+    const json = (await res.json()) as { borrowerEmail: string; borrowerName?: string }
+    expect(json.borrowerEmail).toBe('user@example.com')
+    expect(json.borrowerName).toBe('Tester')
   })
 })

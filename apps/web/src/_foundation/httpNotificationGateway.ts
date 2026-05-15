@@ -7,6 +7,7 @@ export class HttpNotificationGateway implements NotificationGateway {
 
   async notify(type: NotificationType, location: Location, book: BookMetadata): Promise<void> {
     const res = await fetch(`${this.baseUrl}/notifications/slack`, {
+      credentials: 'include',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, location, book }),

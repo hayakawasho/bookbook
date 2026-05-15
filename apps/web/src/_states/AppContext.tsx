@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useState,
   type ReactNode,
 } from 'react'
 import type { BarcodeScannerAdapter } from '../_foundation/barcodeScannerAdapter'
@@ -91,7 +92,7 @@ type AppContextValue = {
   currentUser: CurrentUser | null
   authLoading: boolean
   login: () => void
-  logout: () => void
+  logout: () => void | Promise<void>
   bookRepo: BookRepository
   historyRepo: HistoryRepository
   notificationGateway: NotificationGateway
@@ -102,20 +103,60 @@ const AppContext = createContext<AppContextValue | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
-  const currentUser = null
-  const authLoading = false
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() =>
+    USE_HTTP_API ? null : { email: 'mock@local.dev', name: 'Mock' },
+  )
+  const [authLoading, setAuthLoading] = useState(() => USE_HTTP_API)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = state.themeMode
+  }, [state.themeMode])
+
+  useEffect(() => {
+    if (!USE_HTTP_API) {
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      setAuthLoading(true)
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' })
+        if (cancelled) return
+        if (res.ok) {
+          const data = (await res.json()) as {
+            user: { email: string; name: string | null }
+          }
+          setCurrentUser({
+            email: data.user.email,
+            name: data.user.name ?? undefined,
+          })
+        } else {
+          setCurrentUser(null)
+        }
+      } catch {
+        if (!cancelled) setCurrentUser(null)
+      } finally {
+        if (!cancelled) setAuthLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const login = () => {
     window.location.href = '/api/auth/google/start'
   }
 
-  const logout = () => {
-    // Google OAuth 本実装時に /api/auth/logout と状態更新を接続する
+  const logout = async () => {
+    if (!USE_HTTP_API) return
+    try {
+      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' })
+    } catch {
+      /* network errors: still clear local session UX */
+    }
+    setCurrentUser(null)
   }
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = state.themeMode
-  }, [state.themeMode])
 
   return (
     <AppContext.Provider

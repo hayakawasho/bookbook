@@ -59,7 +59,7 @@ export function LibraryScreen() {
       ) : books.length === 0 ? (
         <div className="h-full grid items-center gap-2 text-sm text-center">
           <p className="text-sm">
-            {query.trim() ? '該当する本がありません' : '本が登録されていません'}
+            {query.trim() ? `『${query}』に関連する本は見つかりませんでした` : '本が登録されていません'}
           </p>
         </div>
       ) : (

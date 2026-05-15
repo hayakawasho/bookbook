@@ -12,6 +12,7 @@ import {
   SESSION_MAX_AGE_SEC,
   signSession,
   verifySession,
+  type SessionUser,
 } from './auth'
 
 type Bindings = {
@@ -75,11 +76,42 @@ type MicroCMSHistory = {
   book_metadata?: MicroCMSBook[]
   checkout_date?: string
   return_date?: string
+  borrower_email?: string | null
+  borrower_name?: string | null
 }
 
-const app = new Hono<{ Bindings: Bindings }>()
+const app = new Hono<{ Bindings: Bindings; Variables: { sessionUser: SessionUser } }>()
 
-app.use('/api/*', cors())
+app.use('/api/*', cors({ credentials: true }))
+
+/** /api/auth/* と CORS の OPTIONS は除き、セッション必須 */
+app.use('/api/*', async (c, next) => {
+  if (c.req.method === 'OPTIONS') {
+    return next()
+  }
+  const pathname = new URL(c.req.url).pathname
+  if (pathname.startsWith('/api/auth')) {
+    return next()
+  }
+
+  const secret = c.env.AUTH_COOKIE_SECRET
+  if (!secret || secret.length < 16) {
+    return c.json({ error: 'authentication is not configured' }, 503)
+  }
+
+  const raw = getCookie(c, SESSION_COOKIE_NAME)
+  if (!raw) {
+    return c.json({ error: 'unauthorized' }, 401)
+  }
+
+  const sessionUser = await verifySession(secret, raw)
+  if (!sessionUser) {
+    return c.json({ error: 'unauthorized' }, 401)
+  }
+
+  c.set('sessionUser', sessionUser)
+  await next()
+})
 
 type GoogleTokenResponse = {
   access_token?: string
@@ -293,6 +325,10 @@ function historyFromCMS(raw: MicroCMSHistory) {
 
   const ret = raw.return_date
 
+  const borrowerEmail = raw.borrower_email?.trim() ?? ''
+  const borrowerNameRaw = raw.borrower_name?.trim()
+  const borrowerName = borrowerNameRaw ? borrowerNameRaw : undefined
+
   if (!fromBook) {
     return {
       historyId: raw.id,
@@ -308,6 +344,8 @@ function historyFromCMS(raw: MicroCMSHistory) {
       checkoutDate: checkout,
       returnDate: ret,
       isDone: raw.is_done ?? false,
+      borrowerEmail,
+      ...(borrowerName ? { borrowerName } : {}),
     }
   }
 
@@ -325,6 +363,8 @@ function historyFromCMS(raw: MicroCMSHistory) {
     checkoutDate: checkout,
     returnDate: ret,
     isDone: raw.is_done ?? false,
+    borrowerEmail,
+    ...(borrowerName ? { borrowerName } : {}),
   }
 }
 
@@ -732,6 +772,7 @@ app.get('/api/history', async c => {
 // POST /api/history
 app.post('/api/history', async c => {
   const { isbn, location } = await c.req.json<{ isbn: string; location: string }>()
+  const sessionUser = c.get('sessionUser')
 
   const cms = requireCmsEnv(c.env, location)
   if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
@@ -749,6 +790,8 @@ app.post('/api/history', async c => {
     isbn: book.id,
     book_metadata: [book.id],
     is_done: false,
+    borrower_email: sessionUser.email,
+    borrower_name: sessionUser.name ?? '',
   }
 
   const createRes = await fetch(`${cms.baseUrl}/history`, {
