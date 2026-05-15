@@ -3,12 +3,19 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import type { BarcodeScannerAdapter } from '../_foundation/barcodeScannerAdapter'
 import { MockBarcodeScannerAdapter } from '../_foundation/barcodeScannerAdapter'
 import { Html5QrcodeScannerAdapter } from '../_adapters/html5-qrcode/html5QrcodeScannerAdapter'
+import {
+  loadStoredLocation,
+  persistLocation,
+  persistThemeMode,
+  resolveInitialThemeMode,
+} from '../_foundation/appPreferencesStorage'
 import type { Location } from '../_foundation/const'
 import { HttpNotificationGateway } from '../_foundation/httpNotificationGateway'
 import { MockNotificationGateway } from '../_foundation/notificationGateway'
@@ -101,12 +108,33 @@ type AppContextValue = {
 
 const AppContext = createContext<AppContextValue | null>(null)
 
+function initAppState(base: AppState): AppState {
+  return {
+    ...base,
+    location: loadStoredLocation() ?? base.location,
+    themeMode: resolveInitialThemeMode(),
+  }
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState)
+  const [state, dispatch] = useReducer(appReducer, initialState, initAppState)
+  const skipThemePersistOnMount = useRef(true)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() =>
     USE_HTTP_API ? null : { email: 'mock@local.dev', name: 'Mock' },
   )
   const [authLoading, setAuthLoading] = useState(() => USE_HTTP_API)
+
+  useEffect(() => {
+    persistLocation(state.location)
+  }, [state.location])
+
+  useEffect(() => {
+    if (skipThemePersistOnMount.current) {
+      skipThemePersistOnMount.current = false
+      return
+    }
+    persistThemeMode(state.themeMode)
+  }, [state.themeMode])
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.themeMode

@@ -1,9 +1,28 @@
 <!doctype html>
-<html lang="ja" data-theme="light">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>bookbook</title>
+    <!-- APP_PREFERENCES_THEME_STORAGE_KEY — must match apps/web/src/_foundation/appPreferencesStorage.ts -->
+    <script>
+      (function () {
+        try {
+          var key = 'bookbook.theme';
+          var stored = localStorage.getItem(key);
+          var root = document.documentElement;
+          if (stored === 'dark') {
+            root.dataset.theme = 'dark';
+            return;
+          }
+          if (stored !== 'light') {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              root.dataset.theme = 'dark';
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
