@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useAppContext } from '../../../_states/app-context'
-import { Header } from '../../ui/header'
-import { BookItem, BookStockSummaryLines } from '../../model/book/book-item'
-import { SettingsScreen } from '../settings/settings-screen'
+import { useAppContext } from '../../../_states/AppContext'
+import { Header } from '../../ui/Header'
+import { BookItem, BookStockSummaryLines } from '../../model/book/BookItem'
+import { SettingsScreen } from '../settings/SettingsScreen'
 import { IconCog } from '../../ui/icon'
 
 export function LibraryScreen() {
@@ -10,7 +10,7 @@ export function LibraryScreen() {
   const [query, setQuery] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  const books = bookRepo.findAll(query)
+  const books = bookRepo.findMany(query, state.location)
 
   /* bookRepo はコンテキスト外のミュータブルなため、一覧の書籍が変わったときにこの画面へ反映させる */
   void state.books
@@ -20,7 +20,7 @@ export function LibraryScreen() {
   }
 
   return (
-    <div className={`flex flex-col ${(books.length === 0) ? 'h-[stretch]' : ''}`}>
+    <div className={`flex flex-col ${(books.length === 0) ? 'h-full' : ''}`}>
       <Header
         title="本棚"
         rightAction={
@@ -49,7 +49,7 @@ export function LibraryScreen() {
         />
       </div>
 			{books.length === 0 ? (
-				<div className="h-[stretch] grid items-center gap-2 text-sm text-center">
+				<div className="h-full grid items-center gap-2 text-sm text-center">
 					<p className="text-sm">
 						{query.trim() ? '該当する本がありません' : '本が登録されていません'}
 	        </p>

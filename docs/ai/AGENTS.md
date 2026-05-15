@@ -41,16 +41,16 @@ bookbook — Web フロントエンドアプリケーション
 (プロジェクト構成が決まったら記載)
 
 - src
-  - _book
+  - _book　本に関するドメインモデル
   - _components
-    - model
-    - navigation
-    - page
-    - ui
-  - _foundation
-  - _repositories
-  - _states
-  - assets
+    - model モデルに依存するコンポーネント
+    - navigation ルーティング関連
+    - page　ページ固有コンポーネント
+    - ui　横断的に利用するコンポーネント
+  - _foundation　横断的に利用できる変数や関数など
+  - _repositories　API接続するリポジトリ層
+  - _states　グローバルステート
+  - assets アセットファイル
 ```
 
 ## デザインルール

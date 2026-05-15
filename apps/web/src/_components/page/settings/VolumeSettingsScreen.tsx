@@ -1,5 +1,5 @@
-import { useAppContext } from '../../../_states/app-context'
-import { Header } from '../../ui/header'
+import { useAppContext } from '../../../_states/AppContext'
+import { Header } from '../../ui/Header'
 import { IconArrowPrev, IconVolumeMute, IconVolumeUp } from '../../ui/icon'
 
 type VolumeSettingsScreenProps = {

@@ -1,4 +1,11 @@
 import type { BookMetadata } from '../../_book/model'
+import type { Location } from '../../_foundation/const'
+import type {
+  BookCountOperation,
+  BookRepository,
+  ExternalBookInfo,
+  FindByIsbnResult,
+} from './interface'
 
 const INITIAL_BOOKS: BookMetadata[] = [
   {
@@ -67,55 +74,64 @@ const EXTERNAL_BOOKS: Record<string, ExternalBook> = {
   },
 }
 
-export class MockBookRepository {
+export class MockBookRepository implements BookRepository {
   private books: BookMetadata[] = INITIAL_BOOKS.map(b => ({ ...b }))
 
-  findByIsbn(isbn: string): BookMetadata | null {
-    return this.books.find(b => b.isbn === isbn) ?? null
-  }
-
-  fetchExternal(isbn: string): ExternalBook | null {
-    return EXTERNAL_BOOKS[isbn] ?? null
-  }
-
-  add(book: BookMetadata): void {
-    this.books.push({ ...book })
-  }
-
-  addCopy(isbn: string): void {
-    const book = this.books.find(b => b.isbn === isbn)
-    if (!book) {
-      return
+  findByIsbn(isbn: string, _location: Location): FindByIsbnResult {
+    const registered = this.books.find(b => b.isbn === isbn)
+    if (registered) {
+      return { status: 'registered', book: registered }
     }
-    book.total += 1
-    book.availableCount += 1
-  }
-
-  checkout(isbn: string): void {
-    const book = this.books.find(b => b.isbn === isbn)
-    if (!book || book.availableCount <= 0) {
-      return
+    const external = EXTERNAL_BOOKS[isbn]
+    if (external) {
+      return { status: 'external', book: external }
     }
-    book.availableCount -= 1
+    return { status: 'notfound' }
   }
 
-  returnBook(isbn: string): void {
-    const book = this.books.find(b => b.isbn === isbn)
-    if (!book || book.availableCount >= book.total) {
-      return
-    }
-    book.availableCount += 1
-  }
-
-  findAll(q?: string): BookMetadata[] {
-    if (!q || q.trim() === '') {
+  findMany(query: string, _location: Location): BookMetadata[] {
+    if (!query || query.trim() === '') {
       return [...this.books]
     }
-    const lower = q.toLowerCase()
+    const lower = query.toLowerCase()
     return this.books.filter(
       b =>
         b.title.toLowerCase().includes(lower) ||
         (b.author?.toLowerCase().includes(lower) ?? false),
     )
+  }
+
+  create(book: ExternalBookInfo, _location: Location): void {
+    const row: BookMetadata = {
+      ...book,
+      availableCount: 1,
+      total: 1,
+    }
+    this.books.push({ ...row })
+  }
+
+  updateCount(isbn: string, operation: BookCountOperation, _location: Location): void {
+    const book = this.books.find(b => b.isbn === isbn)
+    if (!book) {
+      return
+    }
+    switch (operation) {
+      case 'add-copy':
+        book.total += 1
+        book.availableCount += 1
+        break
+      case 'checkout':
+        if (book.availableCount <= 0) {
+          return
+        }
+        book.availableCount -= 1
+        break
+      case 'return':
+        if (book.availableCount >= book.total) {
+          return
+        }
+        book.availableCount += 1
+        break
+    }
   }
 }

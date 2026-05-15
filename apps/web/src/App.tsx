@@ -1,8 +1,8 @@
-import { AppProvider, useAppContext, type AppTab } from './_states/app-context'
-import { BottomTabs } from './_components/navigation/bottom-tabs'
-import { HomeScreen } from './_components/page/home/home-screen'
-import { LibraryScreen } from './_components/page/library/library-screen'
-import { CheckoutHistoryScreen } from './_components/page/checkout-history/checkout-history-screen'
+import { AppProvider, useAppContext, type AppTab } from './_states/AppContext'
+import { BottomTabs } from './_components/navigation/BottomTabs'
+import { HomeScreen } from './_components/page/home/HomeScreen'
+import { LibraryScreen } from './_components/page/library/LibraryScreen'
+import { CheckoutHistoryScreen } from './_components/page/checkout-history/CheckoutHistoryScreen'
 import './App.css'
 
 function ActiveTabPanel({ tab }: { tab: AppTab }) {
@@ -20,7 +20,7 @@ function AppContent() {
   const { state } = useAppContext()
 
   return (
-    <div className="w-full max-w-[430px] mx-auto h-dvh flex flex-col bg-background relative text-text">
+    <div className="w-full ___max-w-[430px] mx-auto h-dvh flex flex-col bg-background relative text-text">
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[70px]">
         <ActiveTabPanel tab={state.activeTab} />
       </div>
