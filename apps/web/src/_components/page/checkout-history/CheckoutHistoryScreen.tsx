@@ -56,12 +56,18 @@ export function CheckoutHistoryScreen() {
 
       {dialogConfig && (
         <Dialog
-          title={dialogConfig.title}
           message={dialogConfig.message}
           confirmLabel={dialogConfig.confirmLabel}
-          cancelLabel="キャンセル"
+          cancelLabel={dialogConfig.cancelLabel ?? 'キャンセル'}
+          width={dialogConfig.width}
           onConfirm={dialogConfig.onConfirm}
-          onCancel={() => setDialogConfig(null)}
+          onCancel={() => {
+            if (dialogConfig.onCancel) {
+              dialogConfig.onCancel()
+            } else {
+              setDialogConfig(null)
+            }
+          }}
         />
       )}
 

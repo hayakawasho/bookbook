@@ -1,59 +1,88 @@
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
 } from 'react'
+import { useBookItem, useBookUsecase } from '../../../_book/usecase'
 import type { BookMetadata } from '../../../_book/model'
+import type {
+  ExternalBookInfo,
+  FindByIsbnResult,
+} from '../../../_repositories/books/interface'
 import { normalizeIsbnBarcode } from '../../../_foundation/utils'
-import type { ExternalBookInfo } from '../../../_repositories/books/interface'
 import { useAppContext } from '../../../_states/AppContext'
 import type { DialogConfig, SheetMode, ToastState } from './types'
 
 export const HOME_BARCODE_CAMERA_ELEMENT_ID = 'home-html5qrcode-camera'
 
+function sheetModeAfterLookup(bookResult: FindByIsbnResult): SheetMode | 'not-found' {
+  if (bookResult.status === 'registered') {
+    return { kind: 'existing', book: bookResult.book }
+  }
+
+  if (bookResult.status === 'external') {
+    return { kind: 'external', book: bookResult.book }
+  }
+
+  return 'not-found'
+}
+
 export function useHomeScreen() {
-  const { state, dispatch, bookRepo, barcodeScanner } = useAppContext()
+  const { state, barcodeScanner } = useAppContext()
+  const usecase = useBookUsecase()
 
   const [isbnInput, setIsbnInput] = useState('')
+  const [lookupIsbn, setLookupIsbn] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [cameraOpen, setCameraOpen] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [sheetMode, setSheetMode] = useState<SheetMode | null>(null)
+  const sheetModeRef = useRef<SheetMode | null>(null)
   const [dialogConfig, setDialogConfig] = useState<DialogConfig | null>(null)
   const [toast, setToast] = useState<ToastState>(null)
+
+  const { data: bookResult } = useBookItem(lookupIsbn)
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type })
   }, [])
 
-  const lookupByBarcodeRaw = useCallback(
-    (raw: string) => {
-      const isbn = normalizeIsbnBarcode(raw.trim())
-      setNotFound(false)
-      setSheetMode(null)
+  useEffect(() => {
+    // sheetMode を scanner effect の依存に入れるとスキャン開始を毎回やり直すため、閉じた onDetected が最新状態を読めるよう ref で同期する
+    sheetModeRef.current = sheetMode
+  }, [sheetMode])
 
-      if (!isbn) {
-        setNotFound(true)
-        return
-      }
+  const lookupByBarcodeRaw = useCallback((raw: string) => {
+    const isbn = normalizeIsbnBarcode(raw.trim())
+    setNotFound(false)
+    setSheetMode(null)
 
-      setIsbnInput(isbn)
-
-      const result = bookRepo.findByIsbn(isbn, state.location)
-      if (result.status === 'registered') {
-        setSheetMode({ kind: 'existing', book: result.book })
-        return
-      }
-      if (result.status === 'external') {
-        setSheetMode({ kind: 'external', book: result.book })
-        return
-      }
+    if (!isbn) {
       setNotFound(true)
-    },
-    [bookRepo, state.location],
-  )
+      return
+    }
+
+    setIsbnInput(isbn)
+    setLookupIsbn(isbn)
+  }, [])
+
+  useEffect(() => {
+    if (!lookupIsbn || bookResult === undefined) {
+      return
+    }
+
+    const next = sheetModeAfterLookup(bookResult)
+
+    if (next === 'not-found') {
+      setNotFound(true)
+      return
+    }
+
+    setSheetMode(next)
+  }, [lookupIsbn, bookResult])
 
   const handleChangeIsbnInput = (value: string) => {
     setIsbnInput(value)
@@ -67,15 +96,19 @@ export function useHomeScreen() {
   const handlePickImage = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
+
     if (!file) {
       return
     }
+
     try {
       const raw = await barcodeScanner.scanFile(file)
+
       if (raw == null) {
         showToast('画像からバーコードを読み取れませんでした', 'error')
         return
       }
+
       lookupByBarcodeRaw(raw)
     } catch {
       showToast('画像の処理に失敗しました', 'error')
@@ -90,7 +123,10 @@ export function useHomeScreen() {
     barcodeScanner.start({
       elementId: HOME_BARCODE_CAMERA_ELEMENT_ID,
       onDetected: raw => {
-        setCameraOpen(false)
+        const sheetBlocksScanWhileOpen = sheetModeRef.current !== null
+        if (sheetBlocksScanWhileOpen) {
+          return
+        }
         lookupByBarcodeRaw(raw)
       },
       onError: err => {
@@ -104,76 +140,124 @@ export function useHomeScreen() {
     }
   }, [cameraOpen, barcodeScanner, lookupByBarcodeRaw, showToast])
 
+  const handleSheetClose = useCallback(() => {
+    setSheetMode(null)
+    setLookupIsbn(null)
+  }, [])
+
   const handleToggleCamera = () => {
     if (cameraOpen) {
       setCameraOpen(false)
       return
     }
+
     if (!barcodeScanner.isSupported()) {
       showToast('この端末ではカメラ読取が使えません', 'error')
       return
     }
+
     setCameraOpen(true)
   }
 
-  const handleCheckout = (book: BookMetadata) => {
-    setDialogConfig({
-      title: '本を借りる',
-      message: `「${book.title}」を借りますか？`,
-      confirmLabel: '本を借りる',
-      onConfirm: () => {
-        dispatch({ type: 'CHECKOUT', payload: { isbn: book.isbn } })
-        setDialogConfig(null)
-        setSheetMode(null)
-        setIsbnInput('')
-        showToast('借りました', 'success')
-      },
-    })
-  }
+  const clearScanSession = useCallback(() => {
+    setLookupIsbn(null)
+    setSheetMode(null)
+    setIsbnInput('')
+  }, [])
 
-  const handleAddCopy = (book: BookMetadata) => {
+  const handleCheckout = useCallback(
+    async (book: BookMetadata) => {
+      const result = await usecase.checkoutBook(book.isbn, state.location)
+
+      if (result.err) {
+        showToast('貸出に失敗しました', 'error')
+        return
+      }
+
+      clearScanSession()
+      showToast('貸出が完了しました', 'success')
+    },
+    [clearScanSession, showToast, state.location, usecase]
+  )
+
+  const handleIncrementBook = (book: BookMetadata) => {
     setDialogConfig({
-      title: '冊数追加確認',
-      message: `「${book.title}」を1冊追加しますか？`,
+      message: `すでに${book.total}冊登録されています。\nこのまま追加しますか？`,
       confirmLabel: '追加する',
-      onConfirm: () => {
-        dispatch({ type: 'ADD_COPY', payload: { isbn: book.isbn } })
+      cancelLabel: 'キャンセル',
+      width: 287,
+      onConfirm: async () => {
         setDialogConfig(null)
-        setSheetMode(null)
-        setIsbnInput('')
-        showToast('冊数を追加しました', 'success')
+        const result = await usecase.incrementBook(book.isbn, state.location)
+
+        if (result.err) {
+          showToast('冊数の追加に失敗しました', 'error')
+          return
+        }
+
+        clearScanSession()
+        showToast('本棚に追加しました', 'success')
+      },
+      onCancel: () => {
+        setDialogConfig(null)
+        handleSheetClose()
       },
     })
   }
 
-  const handleAddBook = (book: ExternalBookInfo) => {
-    setDialogConfig({
-      title: '新規登録確認',
-      message: `「${book.title}」をライブラリに登録しますか？`,
-      confirmLabel: '登録する',
-      onConfirm: () => {
-        dispatch({
-          type: 'ADD_BOOK',
-          payload: { ...book, availableCount: 1, total: 1 },
-        })
-        setDialogConfig(null)
-        setSheetMode(null)
-        setIsbnInput('')
-        showToast('登録しました', 'success')
-      },
-    })
-  }
+  const handleAddBook = useCallback(
+    async (book: ExternalBookInfo) => {
+
+      const result = await usecase.addNewBook(book, state.location)
+
+      if (result.err) {
+        showToast('登録に失敗しました', 'error')
+        return
+      }
+
+      showToast('本棚に追加しました', 'success')
+
+      setDialogConfig({
+        message: 'このまま本を借りますか？',
+        confirmLabel: 'はい',
+        cancelLabel: 'いいえ',
+        width: 287,
+        onConfirm: async () => {
+          setDialogConfig(null)
+          const checkoutResult = await usecase.checkoutBook(book.isbn, state.location)
+          if (checkoutResult.err) {
+            showToast('貸出に失敗しました', 'error')
+            return
+          }
+          clearScanSession()
+          showToast('貸出が完了しました', 'success')
+        },
+        onCancel: () => {
+          setDialogConfig(null)
+          handleSheetClose()
+        },
+      })
+    },
+    [
+      clearScanSession,
+      handleSheetClose,
+      showToast,
+      state.location,
+      usecase,
+    ]
+  )
 
   return {
     cameraOpen,
     dialogConfig,
     fileInputRef,
     handleAddBook,
-    handleAddCopy,
+    handleIncrementBook,
     handleChangeIsbnInput,
     handleCheckout,
     handleManualSearch,
     handlePickImage,
+    handleSheetClose,
     handleToggleCamera,
     isbnInput,
     notFound,

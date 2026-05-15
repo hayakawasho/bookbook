@@ -12,6 +12,13 @@ const EAN_13_ONLY: Html5QrcodeSupportedFormats[] = [
 /** 画像ファイル読取用の非表示スロット（カメラ用要素と競合しない） */
 const FILE_SLOT_ID = 'bookbook-html5qrcode-file-slot'
 
+/** mobile の Scanner と同様、978 から始まる ISBN（EAN-13）のみ検出扱いにする */
+const ISBN_CODE_PREFIX = '978'
+
+function isIsbnBarcode(raw: string): boolean {
+  return raw.trim().startsWith(ISBN_CODE_PREFIX)
+}
+
 function barcodeDecoderConfig(verbose: boolean) {
   return { verbose, formatsToSupport: EAN_13_ONLY }
 }
@@ -73,7 +80,7 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
     try {
       const text = await qr.scanFile(file, false)
       await stopAndClear(qr)
-      return text
+      return isIsbnBarcode(text) ? text.trim() : null
     } catch {
       await stopAndClear(qr)
       return null
@@ -98,7 +105,6 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
 
     await this.disposeCamera()
 
-    let decodedOnce = false
     const qr = new Html5Qrcode(elementId, barcodeDecoderConfig(false))
     this.cameraQr = qr
 
@@ -106,19 +112,17 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
       await qr.start(
         { facingMode: 'environment' },
         {
-					fps: 8,
+          fps: 8,
           qrbox: () => ({
-						width: 287,
+            width: 287,
             height: 101,
           }),
         },
-        async decodedText => {
-          if (decodedOnce) {
+        decodedText => {
+          if (!isIsbnBarcode(decodedText)) {
             return
           }
-          decodedOnce = true
-          await this.disposeCamera()
-          options.onDetected(decodedText)
+          options.onDetected(decodedText.trim())
         },
         () => {},
       )

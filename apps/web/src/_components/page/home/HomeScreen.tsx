@@ -15,16 +15,16 @@ export function HomeScreen() {
     dialogConfig,
     fileInputRef,
     handleAddBook,
-    handleAddCopy,
+    handleIncrementBook,
     handleChangeIsbnInput,
     handleCheckout,
     handleManualSearch,
     handlePickImage,
+    handleSheetClose,
     handleToggleCamera,
     isbnInput,
     notFound,
     setDialogConfig,
-    setSheetMode,
     setToast,
     sheetMode,
     toast,
@@ -64,11 +64,11 @@ export function HomeScreen() {
         </div>
       </div>
 
-      <BottomSheet open={sheetMode !== null} onClose={() => setSheetMode(null)}>
+      <BottomSheet open={sheetMode !== null} onClose={handleSheetClose}>
         {sheetMode?.kind === 'existing' && (
           <HomeExistingBookSheet
             book={sheetMode.book}
-            onAddCopy={handleAddCopy}
+            onAddCopy={handleIncrementBook}
             onCheckout={handleCheckout}
           />
         )}
@@ -82,12 +82,18 @@ export function HomeScreen() {
 
       {dialogConfig && (
         <Dialog
-          title={dialogConfig.title}
           message={dialogConfig.message}
           confirmLabel={dialogConfig.confirmLabel}
-          cancelLabel="キャンセル"
+          cancelLabel={dialogConfig.cancelLabel ?? 'キャンセル'}
+          width={dialogConfig.width}
           onConfirm={dialogConfig.onConfirm}
-          onCancel={() => setDialogConfig(null)}
+          onCancel={() => {
+            if (dialogConfig.onCancel) {
+              dialogConfig.onCancel()
+            } else {
+              setDialogConfig(null)
+            }
+          }}
         />
       )}
 

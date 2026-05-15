@@ -1,8 +1,8 @@
 import type { BookMetadata } from '../../../_book/model'
 import type { ExternalBookInfo } from '../../../_repositories/books/interface'
+import { BookCover } from '../../model/book/BookCover'
 import { BookItem, BookStockSummaryLines } from '../../model/book/BookItem'
 import { IconPlus } from '../../ui/icon'
-import noImageFallback from '../../../assets/no_image.png'
 
 type HomeExistingBookSheetProps = {
   book: BookMetadata
@@ -12,33 +12,7 @@ type HomeExistingBookSheetProps = {
 
 type HomeExternalBookSheetProps = {
   book: ExternalBookInfo
-  onAddBook: (book: ExternalBookInfo) => void
-}
-
-function HomeSheetThumb({ book }: { book: BookMetadata }) {
-  if (!book.cover.src) {
-    return (
-      <img
-        src={noImageFallback}
-        alt=""
-        width={103}
-        height={145}
-        className="w-[103px] h-[145px] object-cover shrink-0 bg-border border-0 block"
-        draggable={false}
-        role="presentation"
-      />
-    )
-  }
-
-  return (
-    <img
-      src={book.cover.src}
-      alt=""
-      width={103}
-      height={145}
-      className="w-[103px] h-[145px] object-cover shrink-0 bg-border border-0 block"
-    />
-  )
+  onAddBook: (book: ExternalBookInfo) => void | Promise<void>
 }
 
 export function HomeExistingBookSheet({
@@ -52,7 +26,7 @@ export function HomeExistingBookSheet({
   return (
     <>
       <div className="flex gap-[29px] items-start px-[22px] pt-8 pb-2">
-        <HomeSheetThumb book={book} />
+        <BookCover src={book.cover.src} alt="" />
         <div className="flex-1 min-w-0 flex flex-col gap-2 pt-0.5">
           <p className="m-0 text-sm font-semibold leading-[22px] text-text break-words">{book.title}</p>
           {attributionLabel && (
@@ -87,18 +61,21 @@ export function HomeExternalBookSheet({
   onAddBook,
 }: HomeExternalBookSheetProps) {
   return (
-    <div className="px-[22px] pb-8 pt-4">
-      <BookItem book={{ ...book, availableCount: 0, total: 0 }} />
-      <p className="m-0 mb-4 text-sm text-text">この本を1冊登録しますか？</p>
-      <div className="flex flex-col gap-3">
+    <>
+      <div className="flex gap-[29px] items-start px-[22px] pt-0 pb-2">
+        <BookItem book={{ ...book, availableCount: 0, total: 0 }} />
+      </div>
+      <div className="px-[22px] pb-8 pt-5 absolute bottom-0 w-full">
         <button
           type="button"
-          className="inline-flex items-center justify-center min-h-[44px] px-5 bg-primary text-primary-contrast border-0 text-sm font-semibold cursor-pointer whitespace-nowrap disabled:bg-middle disabled:cursor-not-allowed w-full"
-          onClick={() => onAddBook(book)}
+          className="inline-flex items-center justify-center min-h-[56px] px-5 bg-primary text-primary-contrast border-0 text-sm font-semibold cursor-pointer whitespace-nowrap disabled:bg-middle disabled:cursor-not-allowed w-full"
+          onClick={() => {
+            onAddBook(book)
+          }}
         >
-          登録する
+          新規追加
         </button>
       </div>
-    </div>
+    </>
   )
 }

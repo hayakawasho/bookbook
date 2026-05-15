@@ -77,61 +77,49 @@ const EXTERNAL_BOOKS: Record<string, ExternalBook> = {
 export class MockBookRepository implements BookRepository {
   private books: BookMetadata[] = INITIAL_BOOKS.map(b => ({ ...b }))
 
-  findByIsbn(isbn: string, _location: Location): FindByIsbnResult {
+  findByIsbn(isbn: string, _location: Location): Promise<FindByIsbnResult> {
     const registered = this.books.find(b => b.isbn === isbn)
-    if (registered) {
-      return { status: 'registered', book: registered }
-    }
+    if (registered) return Promise.resolve({ status: 'registered', book: registered })
     const external = EXTERNAL_BOOKS[isbn]
-    if (external) {
-      return { status: 'external', book: external }
-    }
-    return { status: 'notfound' }
+    if (external) return Promise.resolve({ status: 'external', book: external })
+    return Promise.resolve({ status: 'notfound' })
   }
 
-  findMany(query: string, _location: Location): BookMetadata[] {
-    if (!query || query.trim() === '') {
-      return [...this.books]
-    }
+  findMany(query: string, _location: Location): Promise<BookMetadata[]> {
+    if (!query || query.trim() === '') return Promise.resolve([...this.books])
     const lower = query.toLowerCase()
-    return this.books.filter(
-      b =>
-        b.title.toLowerCase().includes(lower) ||
-        (b.author?.toLowerCase().includes(lower) ?? false),
+    return Promise.resolve(
+      this.books.filter(
+        b =>
+          b.title.toLowerCase().includes(lower) ||
+          (b.author?.toLowerCase().includes(lower) ?? false),
+      ),
     )
   }
 
-  create(book: ExternalBookInfo, _location: Location): void {
-    const row: BookMetadata = {
-      ...book,
-      availableCount: 1,
-      total: 1,
-    }
+  create(book: ExternalBookInfo, _location: Location): Promise<void> {
+    const row: BookMetadata = { ...book, availableCount: 1, total: 1 }
     this.books.push({ ...row })
+    return Promise.resolve()
   }
 
-  updateCount(isbn: string, operation: BookCountOperation, _location: Location): void {
+  updateCount(isbn: string, operation: BookCountOperation, _location: Location): Promise<void> {
     const book = this.books.find(b => b.isbn === isbn)
-    if (!book) {
-      return
-    }
+    if (!book) return Promise.resolve()
     switch (operation) {
       case 'add-copy':
         book.total += 1
         book.availableCount += 1
         break
       case 'checkout':
-        if (book.availableCount <= 0) {
-          return
-        }
+        if (book.availableCount <= 0) return Promise.resolve()
         book.availableCount -= 1
         break
       case 'return':
-        if (book.availableCount >= book.total) {
-          return
-        }
+        if (book.availableCount >= book.total) return Promise.resolve()
         book.availableCount += 1
         break
     }
+    return Promise.resolve()
   }
 }

@@ -7,3 +7,6 @@ dist
 
 apps/mobile
 .plan
+
+# Cloudflare Worker ローカル開発用シークレット（コミット禁止）
+.dev.vars

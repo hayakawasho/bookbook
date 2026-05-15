@@ -6,10 +6,15 @@ export type SheetMode =
   | { kind: 'external'; book: ExternalBookInfo }
 
 export type DialogConfig = {
-  title: string
   message: string
   confirmLabel: string
+  /** Mobile ConfirmDialog: e.g. いいえ / キャンセル */
+  cancelLabel?: string
   onConfirm: () => void
+  /** When set, used for backdrop/cancel instead of only clearing dialog */
+  onCancel?: () => void
+  /** Matches mobile ConfirmDialog widths: 265 default, 287 for sheet confirmations */
+  width?: number
 }
 
 export type ToastState = {

@@ -8,7 +8,8 @@
 	"scripts": {
 		"dev": "npm run dev -w @bookbook/web",
 		"build": "npm run build -w @bookbook/web",
-		"preview": "npm run preview -w @bookbook/web"
+		"preview": "npm run preview -w @bookbook/web",
+		"test": "npm run test -w @bookbook/web"
 	},
 	"engines": {
 		"node": ">=20"

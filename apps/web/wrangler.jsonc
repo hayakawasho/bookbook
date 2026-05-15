@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bookbook-worker",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  // Secretsは `wrangler secret put <KEY>` で登録する
+  // 必要なシークレット:
+  //   MICROCMS_DAIKANYAMA_API_KEY   - 代官山サービスの microCMS API キー
+  //   MICROCMS_DAIKANYAMA_BASE_URL  - 代官山サービスのエンドポイント (例: https://xxx.microcms.io/api/v1)
+  //   MICROCMS_OKINAWA_API_KEY      - 沖縄サービスの microCMS API キー
+  //   MICROCMS_OKINAWA_BASE_URL     - 沖縄サービスのエンドポイント (例: https://yyy.microcms.io/api/v1)
+  //   SLACK_WEBHOOK_URL             - Slack Incoming Webhook URL (省略可: 省略時は通知をスキップ)
+  "vars": {}
+}

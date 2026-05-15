@@ -12,8 +12,8 @@ export type BookCountOperation = 'add-copy' | 'checkout' | 'return'
 
 /** 書籍データの取得・更新（mock / HTTP 実装を差し替え可能） */
 export interface BookRepository {
-  findByIsbn(isbn: string, location: Location): FindByIsbnResult
-  findMany(query: string, location: Location): BookMetadata[]
-  create(book: ExternalBookInfo, location: Location): void
-  updateCount(isbn: string, operation: BookCountOperation, location: Location): void
+  findByIsbn(isbn: string, location: Location): Promise<FindByIsbnResult>
+  findMany(query: string, location: Location): Promise<BookMetadata[]>
+  create(book: ExternalBookInfo, location: Location): Promise<void>
+  updateCount(isbn: string, operation: BookCountOperation, location: Location): Promise<void>
 }
