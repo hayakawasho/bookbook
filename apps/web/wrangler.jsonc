@@ -11,5 +11,13 @@
   //   MICROCMS_OKINAWA_API_KEY      - 沖縄サービスの microCMS API キー
   //   MICROCMS_OKINAWA_BASE_URL     - 沖縄サービスのエンドポイント (例: https://yyy.microcms.io/api/v1)
   //   SLACK_WEBHOOK_URL             - Slack Incoming Webhook URL (省略可: 省略時は通知をスキップ)
+  // Google OAuth（フェーズ2以降）
+  //   GOOGLE_CLIENT_ID              - Google Cloud OAuth 2.0 クライアント ID
+  //   GOOGLE_CLIENT_SECRET          - クライアントシークレット
+  //   GOOGLE_REDIRECT_URI           - リダイレクト URI（例: https://<workers-host>/api/auth/google/callback）
+  //   AUTH_COOKIE_SECRET            - セッション署名用（16文字以上のランダム文字列推奨）
+  //   ALLOWED_EMAIL_DOMAINS         - 許可メールドメイン（カンマ区切り、例: panorama.jp）
+  // vars で公開してよいものだけ vars に、シークレットは wrangler secret put で登録。
+  //   AUTH_SUCCESS_REDIRECT（任意） - ログイン後のパス（既定 `/`）。vars でよい
   "vars": {}
 }
