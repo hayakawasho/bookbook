@@ -43,6 +43,11 @@ export type AppTab = 'home' | 'library' | 'checkoutHistory'
 
 export type ThemeMode = 'light' | 'dark'
 
+export type CurrentUser = {
+  email: string
+  name?: string
+}
+
 type AppState = {
   location: Location
   activeTab: AppTab
@@ -83,6 +88,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
 type AppContextValue = {
   state: AppState
   dispatch: React.Dispatch<AppAction>
+  currentUser: CurrentUser | null
+  authLoading: boolean
+  login: () => void
+  logout: () => void
   bookRepo: BookRepository
   historyRepo: HistoryRepository
   notificationGateway: NotificationGateway
@@ -93,6 +102,16 @@ const AppContext = createContext<AppContextValue | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
+  const currentUser = null
+  const authLoading = false
+
+  const login = () => {
+    window.location.href = '/api/auth/google/start'
+  }
+
+  const logout = () => {
+    // Google OAuth 本実装時に /api/auth/logout と状態更新を接続する
+  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.themeMode
@@ -100,7 +119,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider
-      value={{ state, dispatch, bookRepo, historyRepo, notificationGateway, barcodeScanner }}
+      value={{
+        state,
+        dispatch,
+        currentUser,
+        authLoading,
+        login,
+        logout,
+        bookRepo,
+        historyRepo,
+        notificationGateway,
+        barcodeScanner,
+      }}
     >
       {children}
     </AppContext.Provider>
