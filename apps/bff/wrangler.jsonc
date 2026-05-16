@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bookbook-worker",
-  "main": "worker/index.ts",
+  "main": "src/index.ts",
   "compatibility_date": "2025-05-15",
   "compatibility_flags": ["nodejs_compat"],
   // Secretsは `wrangler secret put <KEY>` で登録する

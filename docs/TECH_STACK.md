@@ -10,9 +10,10 @@
 | リポジトリ構成 | npm workspaces によるモノレポ             |
 | Node.js        | `>= 20`（ルート `package.json` の engines） |
 | 公開アプリ     | Web（`apps/web`）がメイン成果物             |
+| BFF / API      | `apps/bff`（Cloudflare Workers + Hono）     |
 | 共有コード     | `packages/shared`（TypeScript のみ・軽量）  |
 
-ワークスペース定義はルート `package.json` の `workspaces: ["apps/web", "packages/*"]` に準拠します。
+ワークスペース定義はルート `package.json` の `workspaces: ["apps/web", "apps/bff", "packages/*"]` に準拠します。
 
 ## Web フロントエンド（`apps/web`）
 
@@ -29,43 +30,55 @@
 
 ルーティングは React Router ではなく、**タブ状態を Context で保持するシングルページ構成**（`App.tsx` + `_states/AppContext` + `BottomTabs`）。
 
+フロントから API へのパスは **`/api` 固定**（例: `API_BASE = '/api'`）。Cookie 認証のため **本番でも同一オリジンで `/api/*` が BFF に届く**ようにインフラを組む前提です。
+
+### ローカル開発時の `/api`
+
+Vite の開発サーバーが **`/api` を `wrangler dev`（既定 `http://127.0.0.1:8787`）へプロキシ**します。別ターミナルで BFF を起動してください。
+
+```sh
+npm run dev:bff   # @bookbook/bff（wrangler dev）
+npm run dev       # @bookbook/web（Vite）
+```
+
 デザイン・トーンのルールはリポジトリ直下の [DESIGN.md](../DESIGN.md) に従います。
 
-## バックエンド（同一リポジトリ内）
+## BFF（`apps/bff`）
 
 | 項目           | 選定 |
 | -------------- | ---- |
-| 実行環境       | Cloudflare Workers（`@cloudflare/vite-plugin` / Wrangler で開発・デプロイ想定） |
+| 実行環境       | Cloudflare Workers（Wrangler で開発・デプロイ） |
 | HTTP フレームワーク | Hono 4 |
-| 認証           | Google OAuth 2.0 + HTTP-only Cookie セッション（`worker/auth.ts`） |
+| 認証           | Google OAuth 2.0 + HTTP-only Cookie セッション（`src/auth.ts`） |
 | CMS            | microCMS（複数拠点用に API キー・ベース URL を環境変数で切替） |
 | 外部メタデータ | ISBN に対し OpenBD / Google Books API / NDL OpenSearch 等を Worker から取得・マージ |
 | XML パース     | fast-xml-parser（NDL 応答など） |
 | 通知           | Slack Incoming Webhook（任意） |
 
-API は `apps/web/worker/index.ts` に集約され、`/api/*` プレフィックスで提供されます。
+API は `apps/bff/src/index.ts` に集約され、`/api/*` プレフィックスで提供されます。
 
 ## テスト
 
 | 項目     | 選定 |
 | -------- | ---- |
-| ランナー | Vitest 3 |
-| 対象     | 現状は `worker/**/*.test.ts` のみ（`vitest.config.ts` で `environment: 'node'`） |
-
-フロントエンドのコンポーネントテストは、現時点ではワークスペースの scripts に含まれていません。
+| ランナー | Vitest 3（ルート `devDependencies` でワークスペース共通） |
+| Web      | `apps/web/vitest.config.ts` — `src/**/*.test.{ts,tsx}`（現状テストなしでも `passWithNoTests`） |
+| BFF      | `apps/bff/vitest.config.ts` — `src/**/*.test.ts`、`environment: 'node'` |
 
 ## 開発コマンド（ルートから）
 
 ルート `package.json` のショートカット:
 
 ```sh
-npm run dev      # @bookbook/web の dev（Vite）
-npm run build    # @bookbook/web の production build
-npm run preview  # @bookbook/web の preview
-npm run test     # @bookbook/web の vitest run
+npm run dev        # @bookbook/web の dev（Vite）
+npm run dev:bff    # @bookbook/bff の wrangler dev（/api 用）
+npm run build      # @bookbook/web の production build
+npm run deploy:bff # @bookbook/bff を wrangler deploy
+npm run preview    # @bookbook/web の preview
+npm run test       # @bookbook/web → @bookbook/bff の順で vitest run
 ```
 
-`apps/web` 直下でも同様に `npm run dev` / `build` / `preview` / `test` が定義されています。
+各 `apps/*` 直下でも同名 script が定義されています。
 
 ## 関連ファイル
 
@@ -73,8 +86,11 @@ npm run test     # @bookbook/web の vitest run
 | -------------- | ------ |
 | Web 依存関係   | `apps/web/package.json` |
 | Vite 設定      | `apps/web/vite.config.ts` |
-| Worker エントリ | `apps/web/worker/index.ts` |
-| Vitest 設定    | `apps/web/vitest.config.ts` |
+| BFF エントリ   | `apps/bff/src/index.ts` |
+| Wrangler       | `apps/bff/wrangler.jsonc` |
+| ローカルシークレット（任意） | `apps/bff/.dev.vars`（gitignore、`wrangler dev` が読む） |
+| Vitest（Web）  | `apps/web/vitest.config.ts` |
+| Vitest（BFF）  | `apps/bff/vitest.config.ts` |
 | 共有パッケージ | `packages/shared/package.json` |
 
 ---

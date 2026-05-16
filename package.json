@@ -1,17 +1,19 @@
 {
-	"name": "bookbook",
-	"private": true,
-	"workspaces": [
-		"apps/web",
-		"packages/*"
-	],
-	"scripts": {
-		"dev": "npm run dev -w @bookbook/web",
-		"build": "npm run build -w @bookbook/web",
-		"preview": "npm run preview -w @bookbook/web",
-		"test": "npm run test -w @bookbook/web"
-	},
-	"engines": {
-		"node": ">=20"
-	}
+  "name": "bookbook",
+  "private": true,
+  "workspaces": ["apps/web", "apps/bff", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev -w @bookbook/web",
+    "dev:bff": "npm run dev -w @bookbook/bff",
+    "build": "npm run build -w @bookbook/web",
+    "deploy:bff": "npm run deploy -w @bookbook/bff",
+    "preview": "npm run preview -w @bookbook/web",
+    "test": "npm run test -w @bookbook/web && npm run test -w @bookbook/bff"
+  },
+  "devDependencies": {
+    "vitest": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
