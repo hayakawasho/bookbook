@@ -1,5 +1,5 @@
 import { AppProvider, useAppContext, type AppTab } from './_states/AppContext'
-import { BottomTabs } from './_components/navigation/BottomTabs'
+import { BottomTabs } from './_components/layout/BottomTabs'
 import { HomeScreen } from './_components/page/home/HomeScreen'
 import { LibraryScreen } from './_components/page/library/LibraryScreen'
 import { CheckoutHistoryScreen } from './_components/page/checkout-history/CheckoutHistoryScreen'

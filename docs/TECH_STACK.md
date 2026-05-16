@@ -11,7 +11,7 @@
 | Node.js        | `>= 20`（ルート `package.json` の engines） |
 | 公開アプリ     | Web（`apps/web`）がメイン成果物             |
 | BFF / API      | `apps/bff`（Cloudflare Workers + Hono）     |
-| 共有コード     | `packages/shared`（TypeScript のみ・軽量）  |
+| 共有コード     | `packages/utils`（DOM / React 非依存の TypeScript のみ） |
 
 ワークスペース定義はルート `package.json` の `workspaces: ["apps/web", "apps/bff", "packages/*"]` に準拠します。
 
@@ -27,6 +27,8 @@
 | データ取得         | SWR 2                    | `main.tsx` で `SWRConfig`（再検証ポリシーをアプリ全体で統一） |
 | QR / バーコード    | html5-qrcode             | 書籍 ISBN スキャン用途 |
 | PWA                | Service Worker           | `registerServiceWorker.ts` と `public/sw.js` |
+| 単体・統合テスト   | Vitest 3 + jsdom、React Testing Library、`@testing-library/jest-dom` | `apps/web/vitest.config.ts`、`src/test/setup.ts` |
+| UI カタログ（任意） | Storybook 10（Vite builder） | `apps/web` に配置、`npm run storybook -w @bookbook/web` |
 
 ルーティングは React Router ではなく、**タブ状態を Context で保持するシングルページ構成**（`App.tsx` + `_states/AppContext` + `BottomTabs`）。
 
@@ -42,6 +44,8 @@ npm run dev       # @bookbook/web（Vite）
 ```
 
 デザイン・トーンのルールはリポジトリ直下の [DESIGN.md](../DESIGN.md) に従います。
+
+フロントエンドのディレクトリ境界と依存ルールは [FRONTEND_STRUCTURE.md](./FRONTEND_STRUCTURE.md) を参照します。
 
 ## BFF（`apps/bff`）
 
@@ -62,8 +66,10 @@ API は `apps/bff/src/index.ts` に集約され、`/api/*` プレフィックス
 | 項目     | 選定 |
 | -------- | ---- |
 | ランナー | Vitest 3（ルート `devDependencies` でワークスペース共通） |
-| Web      | `apps/web/vitest.config.ts` — `src/**/*.test.{ts,tsx}`（現状テストなしでも `passWithNoTests`） |
-| BFF      | `apps/bff/vitest.config.ts` — `src/**/*.test.ts`、`environment: 'node'` |
+| Web      | `apps/web/vitest.config.ts` — `environment: 'jsdom'`、`src/**/*.test.{ts,tsx}`、セットアップで `@testing-library/jest-dom` と `cleanup` |
+| BFF      | `apps/bff/vitest.config.ts` — `src/**/*.test.tsx`、`environment: 'node'` |
+
+フロントエンドのテスト方針・統合テストの対象と API モックは [FRONTEND_STRUCTURE.md](/docs/FRONTEND_STRUCTURE.md) の「テスト戦略との関係」を参照します。
 
 ## 開発コマンド（ルートから）
 
@@ -75,6 +81,8 @@ npm run dev:bff    # @bookbook/bff の wrangler dev（/api 用）
 npm run build      # @bookbook/web の production build
 npm run deploy:bff # @bookbook/bff を wrangler deploy
 npm run preview    # @bookbook/web の preview
+npm run storybook  # @bookbook/web の Storybook（開発）
+npm run build-storybook # @bookbook/web の Storybook 静的ビルド（storybook-static）
 npm run test       # @bookbook/web → @bookbook/bff の順で vitest run
 ```
 
@@ -91,7 +99,7 @@ npm run test       # @bookbook/web → @bookbook/bff の順で vitest run
 | ローカルシークレット（任意） | `apps/bff/.dev.vars`（gitignore、`wrangler dev` が読む） |
 | Vitest（Web）  | `apps/web/vitest.config.ts` |
 | Vitest（BFF）  | `apps/bff/vitest.config.ts` |
-| 共有パッケージ | `packages/shared/package.json` |
+| 共有パッケージ | `packages/utils/package.json` |
 
 ---
 

@@ -1,5 +1,5 @@
 import type { HistoryMetadata } from '../../../_book/model'
-import { BookItem } from '../../model/book/BookItem'
+import { BookItem } from '../../usecase/book/BookItem'
 import type { HistorySubTab } from './types'
 
 type HistoryListProps = {

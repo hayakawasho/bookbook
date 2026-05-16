@@ -6,17 +6,17 @@
 
 BooKBooK — 蔵書・貸出履歴などを扱う Web アプリ（npm workspaces モノレポ）。フロントは `apps/web`、BFF（`/api/*`）は `apps/bff`。
 
-詳細な技術選定は [TECH_STACK.md](../TECH_STACK.md) を参照。
+詳細な技術選定は [TECH_STACK.md](/docs/TECH_STACK.md) を参照。
 
 ## 技術スタック（概要）
 
-| カテゴリ             | 技術                                                         |
-| -------------------- | ------------------------------------------------------------ |
-| 言語                 | TypeScript                                                   |
-| フロント             | React 19、Vite 6、Tailwind CSS 4、SWR                        |
-| BFF / Worker         | Cloudflare Workers、Hono 4（`apps/bff`）                     |
-| パッケージマネージャ | npm（workspaces）                                            |
-| Node                 | >= 20                                                        |
+| カテゴリ             | 技術                                     |
+| -------------------- | ---------------------------------------- |
+| 言語                 | TypeScript                               |
+| フロント             | React 19、Vite 6、Tailwind CSS 4、SWR    |
+| BFF / Worker         | Cloudflare Workers、Hono 4（`apps/bff`） |
+| パッケージマネージャ | npm（workspaces）                        |
+| Node                 | >= 20                                    |
 
 ## 開発コマンド
 
@@ -41,17 +41,26 @@ Vitest はルートの `devDependencies` で共通利用。型チェック・リ
 apps/web/src
   _book — 本に関するドメインモデル
   _components
-    model — モデルに依存するコンポーネント
-    navigation — タブ等の画面切替
+    usecase — リソースやタスクの表現に特化した複合コンポーネント
     page — ページ固有コンポーネント
     ui — 横断 UI
+    layout — 共通レイアウト・画面構造
   _foundation — 横断的な変数・関数
   _repositories — API 呼び出し
   _states — グローバル状態（Context 等）
   assets — アセット
 apps/bff/src — Cloudflare Worker（Hono BFF、`/api/*`）
-packages/shared — 共有 TypeScript（現状最小）
+packages/utils — DOM / React に依存しない汎用ユーティリティ
 ```
+
+## フロントエンド境界ルール
+
+詳細は [FRONTEND_STRUCTURE.md](/docs/FRONTEND_STRUCTURE.md) を参照する。
+
+- `_components` は `usecase` / `page` / `ui` / `layout` に分類する。
+- `ui` から `_states`、`_repositories`、`_book/usecase`、`page`、`usecase`、`layout` を import しない。
+- アプリ状態、API 結果、ユースケース呼び出しが必要な場合は `page` または `usecase` 側で接続し、`ui` には props で渡す。
+- フロントエンドテストは `apps/web` の統合テストを優先し、UI 単体テストを大量に作らない。
 
 ## デザインルール
 
@@ -69,9 +78,10 @@ packages/shared — 共有 TypeScript（現状最小）
 
 ## 参照ドキュメント
 
-- [TECH_STACK.md](../TECH_STACK.md) — 技術選定の詳細
+- [TECH_STACK.md](/docs/TECH_STACK.md) — 技術選定の詳細
+- [FRONTEND_STRUCTURE.md](/docs/FRONTEND_STRUCTURE.md) — フロントエンド構成方針
 - [CLEAN_CODE](/docs/ai/rules/CLEAN_CODE.md) — 可読性の基準、Bad / Good パターン集
 
 ## Agent Skills
 
-- [/CMD_review](skills/CMD_review/SKILL.md) — PR レビュー
+- [/CMD_review](/docs/ai/skills/review/SKILL.md) — PR レビュー

@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@bookbook/utils": "*",
     "fast-xml-parser": "^5.8.0",
     "hono": "^4.7.11"
   },

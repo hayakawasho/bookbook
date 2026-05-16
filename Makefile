@@ -13,5 +13,5 @@ preview:
 	npm run preview
 
 clean:
-	rm -rf node_modules apps/web/node_modules packages/shared/node_modules \
-		apps/web/dist
+	rm -rf node_modules apps/web/node_modules apps/bff/node_modules \
+		packages/utils/node_modules apps/web/dist

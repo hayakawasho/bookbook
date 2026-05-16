@@ -2,11 +2,15 @@
 
 node_modules
 dist
+storybook-static
 *.local
 .DS_Store
 
 apps/mobile
-.plan
+docs/plan
 
 # Cloudflare Worker ローカル開発用シークレット（コミット禁止）
 .dev.vars
+
+# Wrangler ローカル状態
+.wrangler

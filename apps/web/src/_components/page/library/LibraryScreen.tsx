@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useBookItems } from '../../../_book/usecase'
 import { Header } from '../../ui/Header'
-import { BookItem, BookStockSummaryLines } from '../../model/book/BookItem'
+import { BookItem, BookStockSummaryLines } from '../../usecase/book/BookItem'
 import { SettingsScreen } from '../settings/SettingsScreen'
 import { IconCog, IconSearch } from '../../ui/icon'
 

@@ -1,7 +1,7 @@
 import type { BookMetadata } from '../../../_book/model'
 import type { ExternalBookInfo } from '../../../_repositories/books/interface'
-import { BookCover } from '../../model/book/BookCover'
-import { BookItem, BookStockSummaryLines } from '../../model/book/BookItem'
+import { BookCover } from '../../usecase/book/BookCover'
+import { BookItem, BookStockSummaryLines } from '../../usecase/book/BookItem'
 import { IconPlus } from '../../ui/icon'
 
 type HomeExistingBookSheetProps = {
