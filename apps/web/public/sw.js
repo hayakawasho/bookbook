@@ -81,7 +81,7 @@ self.addEventListener('fetch', event => {
       const networkPromise = fetch(req)
         .then(res => {
           if (res.ok) {
-            void cache.put(req, res.clone())
+            cache.put(req, res.clone())
           }
           return res
         })

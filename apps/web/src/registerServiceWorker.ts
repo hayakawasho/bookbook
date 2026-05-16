@@ -10,8 +10,8 @@ export function registerServiceWorker(): void {
   }
 
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js').catch((err: unknown) => {
-      console.warn('[bookbook] Service Worker の登録に失敗しました', err)
+    navigator.serviceWorker.register('/sw.js').catch((err: unknown) => {
+      console.warn('[BooKBooK] Service Worker の登録に失敗しました', err)
     })
   })
 }

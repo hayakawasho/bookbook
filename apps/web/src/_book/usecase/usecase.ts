@@ -57,14 +57,16 @@ class BookUsecase {
     try {
       await this.bookRepo.updateCount(isbn, 'checkout', location)
       await this.historyRepo.createCheckout(isbn, location)
+      // createCheckout 成功後は貸出履歴キャッシュを必ず再検証（findByIsbn が未登録でも stale にしない）
+      await this.mutator.mutateManyHistory()
+
       const after = await this.bookRepo.findByIsbn(isbn, location)
-      
+
       if (after.status === 'registered') {
         await this.notify.notify('checkout', location, after.book)
         await Promise.all([
           this.mutator.mutateItem(isbn, after, false),
           this.mutator.mutateListItem(isbn, after.book),
-          this.mutator.mutateManyHistory(),
         ])
       }
       return useCaseResultOk(true)
@@ -77,6 +79,8 @@ class BookUsecase {
     try {
       await this.historyRepo.markReturned(historyId, isbn, location)
       await this.bookRepo.updateCount(isbn, 'return', location)
+      await this.mutator.mutateManyHistory()
+
       const after = await this.bookRepo.findByIsbn(isbn, location)
 
       if (after.status === 'registered') {
@@ -84,10 +88,9 @@ class BookUsecase {
         await Promise.all([
           this.mutator.mutateItem(isbn, after, false),
           this.mutator.mutateListItem(isbn, after.book),
-          this.mutator.mutateManyHistory(),
         ])
       }
-      
+
       return useCaseResultOk(true)
     } catch (e) {
       return useCaseResultError(e instanceof Error ? e : new Error(String(e)))

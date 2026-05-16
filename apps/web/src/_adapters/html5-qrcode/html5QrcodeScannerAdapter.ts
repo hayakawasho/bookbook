@@ -55,17 +55,18 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
   }
 
   start(options: ScanOptions): void {
-    void this.startSafe(options)
+    this.startSafe(options)
   }
 
   stop(): void {
-    void this.disposeCamera()
+    this.disposeCamera()
   }
 
   async scanFile(file: File): Promise<string | null> {
     await this.disposeCamera()
 
     let slot = document.getElementById(FILE_SLOT_ID)
+
     if (!slot) {
       slot = document.createElement('div')
       slot.id = FILE_SLOT_ID
@@ -77,6 +78,7 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
     }
 
     const qr = new Html5Qrcode(FILE_SLOT_ID, barcodeDecoderConfig(false))
+
     try {
       const text = await qr.scanFile(file, false)
       await stopAndClear(qr)
@@ -90,6 +92,7 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
   private async disposeCamera(): Promise<void> {
     const qr = this.cameraQr
     this.cameraQr = null
+    
     if (!qr) {
       return
     }
@@ -98,6 +101,7 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
 
   private async startSafe(options: ScanOptions): Promise<void> {
     const elementId = options.elementId
+
     if (!elementId) {
       options.onError?.(new Error('ScanOptions.elementId が必要です'))
       return
