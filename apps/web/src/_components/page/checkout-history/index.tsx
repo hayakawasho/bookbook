@@ -1,4 +1,4 @@
-import { SettingsScreen } from '../settings/SettingsScreen'
+import { SettingsScreen } from '../settings'
 import { Header } from '../../ui/Header'
 import { Toast } from '../../ui/Toast'
 import { IconCog } from '../../ui/icon'

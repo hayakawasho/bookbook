@@ -1,9 +1,9 @@
 import { AppProvider, useAppContext, type AppTab } from './_states/AppContext'
 import { BottomTabs } from './_components/layout/BottomTabs'
-import { HomeScreen } from './_components/page/home/HomeScreen'
-import { LibraryScreen } from './_components/page/library/LibraryScreen'
-import { CheckoutHistoryScreen } from './_components/page/checkout-history/CheckoutHistoryScreen'
-import { LoginScreen } from './_components/page/login/LoginScreen'
+import { HomeScreen } from './_components/page/home'
+import { LibraryScreen } from './_components/page/library'
+import { CheckoutHistoryScreen } from './_components/page/checkout-history'
+import { LoginScreen } from './_components/page/login'
 import './App.css'
 
 function ActiveTabPanel({ tab }: { tab: AppTab }) {
