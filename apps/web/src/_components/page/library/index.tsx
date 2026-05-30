@@ -1,10 +1,11 @@
 import { useState } from 'react'
+
 import type { Book } from '../../../_models/book'
-import { useBookItems } from '../../usecase/book'
 import { Header } from '../../ui/Header'
+import { IconCog, IconSearch } from '../../ui/icon'
+import { useBookItems } from '../../usecase/book'
 import { BookItem, BookStockSummaryLines } from '../../usecase/book/BookItem'
 import { SettingsScreen } from '../settings'
-import { IconCog, IconSearch } from '../../ui/icon'
 
 function getLibraryEmptyMessage(query: string): string {
   const hasQuery = query.trim().length > 0
@@ -43,8 +44,11 @@ function LibraryEmptyState({ message }: { message: string }) {
 function LibraryBookList({ books }: { books: Book[] }) {
   return (
     <ul className="list-none m-0 p-0">
-      {books.map(book => (
-        <li key={String(book.id)} className="border-b border-border first:border-t first:border-border">
+      {books.map((book) => (
+        <li
+          key={String(book.id)}
+          className="border-b border-border first:border-t first:border-border"
+        >
           <BookItem book={book} action={<BookStockSummaryLines book={book} />} />
         </li>
       ))}
@@ -115,7 +119,7 @@ export function LibraryScreen() {
             autoComplete="off"
             placeholder="探す"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
           />
         </div>
       </div>

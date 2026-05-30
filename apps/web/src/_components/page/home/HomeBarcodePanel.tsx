@@ -33,7 +33,7 @@ export function HomeBarcodePanel({
             inputMode="numeric"
             placeholder="ISBNを入力（例: 9784873119038）"
             value={isbnInput}
-            onChange={e => onChangeIsbnInput(e.target.value)}
+            onChange={(e) => onChangeIsbnInput(e.target.value)}
             maxLength={32}
           />
           <button
@@ -70,9 +70,7 @@ export function HomeBarcodePanel({
         onChange={onPickImage}
       />
       <div className="absolute inset-0 pointer-events-none">
-        {notFound && (
-          <p className="m-0 text-xs text-error shrink-0">見つかりませんでした</p>
-        )}
+        {notFound && <p className="m-0 text-xs text-error shrink-0">見つかりませんでした</p>}
         {cameraOpen ? (
           <div
             id={cameraElementId}

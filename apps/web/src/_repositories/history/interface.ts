@@ -1,5 +1,5 @@
-import type { History } from '../../_models/history'
 import type { Location } from '../../_foundation/const'
+import type { History } from '../../_models/history'
 
 export type HistoryQuery = {
   isDone?: boolean

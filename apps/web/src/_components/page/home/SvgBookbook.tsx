@@ -1,4 +1,4 @@
-import { useId, type SVGAttributes } from 'react'
+import { type SVGAttributes, useId } from 'react'
 
 type SvgBookBookProps = Omit<SVGAttributes<SVGSVGElement>, 'viewBox' | 'children'>
 

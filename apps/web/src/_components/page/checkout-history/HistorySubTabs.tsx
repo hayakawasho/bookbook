@@ -15,10 +15,7 @@ function historySubTabButtonClass(active: boolean) {
   return `${HISTORY_SUB_TAB_BASE_CLASS} border-transparent font-light text-text-muted`
 }
 
-export function HistorySubTabs({
-  activeTab,
-  onChangeTab,
-}: HistorySubTabsProps) {
+export function HistorySubTabs({ activeTab, onChangeTab }: HistorySubTabsProps) {
   return (
     <div className="flex bg-surface border-b border-border">
       <button

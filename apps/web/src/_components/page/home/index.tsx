@@ -4,10 +4,7 @@ import { Toast } from '../../ui/Toast'
 import { HomeBarcodePanel } from './HomeBarcodePanel'
 import { HomeExistingBookSheet, HomeExternalBookSheet } from './HomeBookSheet'
 import { SvgBookBook } from './SvgBookbook'
-import {
-  HOME_BARCODE_CAMERA_ELEMENT_ID,
-  useHomeScreen,
-} from './useHomeScreen'
+import { HOME_BARCODE_CAMERA_ELEMENT_ID, useHomeScreen } from './useHomeScreen'
 
 export function HomeScreen() {
   const {
@@ -73,10 +70,7 @@ export function HomeScreen() {
           />
         )}
         {sheetMode?.kind === 'external' && (
-          <HomeExternalBookSheet
-            book={sheetMode.book}
-            onAddBook={handleAddBook}
-          />
+          <HomeExternalBookSheet book={sheetMode.book} onAddBook={handleAddBook} />
         )}
       </BottomSheet>
 
@@ -98,11 +92,7 @@ export function HomeScreen() {
       )}
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDismiss={() => setToast(null)}
-        />
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
     </div>
   )

@@ -1,3 +1,5 @@
+import type { AppTab } from '../../_states/AppContext'
+import { useAppContext } from '../../_states/AppContext'
 import {
   IconAccount,
   IconAccountFilled,
@@ -6,8 +8,6 @@ import {
   IconLibrary,
   IconLibraryFilled,
 } from '../ui/icon'
-import { useAppContext } from '../../_states/AppContext'
-import type { AppTab } from '../../_states/AppContext'
 
 const TABS: { id: AppTab; label: string }[] = [
   { id: 'home', label: 'ホーム' },
@@ -43,7 +43,7 @@ export function BottomTabs() {
       style={{ height: 'calc(70px + env(safe-area-inset-bottom, 0px))' }}
       aria-label="タブナビゲーション"
     >
-      {TABS.map(tab => {
+      {TABS.map((tab) => {
         const active = state.activeTab === tab.id
         const iconTone = active ? 'text-primary' : 'text-middle'
 

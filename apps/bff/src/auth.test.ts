@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  isAllowedWorkspaceUser,
-  parseAllowedDomains,
-  signSession,
-  verifySession,
-} from './auth'
+
+import { isAllowedWorkspaceUser, parseAllowedDomains, signSession, verifySession } from './auth'
 
 describe('parseAllowedDomains', () => {
   it('カンマ区切りを正規化する', () => {
@@ -41,11 +37,7 @@ describe('signSession / verifySession', () => {
   })
 
   it('署名が違えば null', async () => {
-    const token = await signSession(
-      '0123456789abcdef',
-      { email: 'a@example.com' },
-      3600,
-    )
+    const token = await signSession('0123456789abcdef', { email: 'a@example.com' }, 3600)
     const u = await verifySession('fedcba9876543210', token)
     expect(u).toBeNull()
   })

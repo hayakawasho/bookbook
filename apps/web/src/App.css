@@ -7,8 +7,8 @@
 }
 
 #qr-shaded-region {
-	border: none !important;
-	width: min(calc(287px / 375px * 100%), 287px);
+  border: none !important;
+  width: min(calc(287px / 375px * 100%), 287px);
   aspect-ratio: 287 / 101;
   position: absolute;
   inset: 0;
@@ -16,15 +16,15 @@
 }
 
 #qr-shaded-region:before {
-	content: "";
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	border: 10px solid var(--color-accent);
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 10px solid var(--color-accent);
 }
 
 #qr-shaded-region > div {
-	display: none !important;
+  display: none !important;
 }

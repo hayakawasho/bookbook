@@ -10,9 +10,12 @@
     "preview": "npm run preview -w @bookbook/web",
     "storybook": "npm run storybook -w @bookbook/web",
     "build-storybook": "npm run build-storybook -w @bookbook/web",
-    "test": "npm run test -w @bookbook/web && npm run test -w @bookbook/bff"
+    "test": "npm run test -w @bookbook/web && npm run test -w @bookbook/bff",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
     "vitest": "^3.1.0"
   },
   "engines": {

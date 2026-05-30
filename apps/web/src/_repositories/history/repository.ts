@@ -1,6 +1,6 @@
-import { History, toHistoryId } from '../../_models/history'
-import type { Book } from '../../_models/book'
 import type { Location } from '../../_foundation/const'
+import type { Book } from '../../_models/book'
+import { History, toHistoryId } from '../../_models/history'
 import type { BookRepository } from '../books/interface'
 import type { HistoryQuery, HistoryRepository } from './interface'
 
@@ -37,7 +37,7 @@ export class MockHistoryRepository implements HistoryRepository {
   private histories: History[] = []
 
   findMany(query: HistoryQuery, _location: Location): Promise<History[]> {
-    const list = this.histories.filter(h => matchesHistoryQuery(h, query))
+    const list = this.histories.filter((h) => matchesHistoryQuery(h, query))
     return Promise.resolve(list)
   }
 
@@ -54,7 +54,7 @@ export class MockHistoryRepository implements HistoryRepository {
   }
 
   markReturned(historyId: string, isbn: string, _location: Location): Promise<void> {
-    this.histories = this.histories.map(h => {
+    this.histories = this.histories.map((h) => {
       const isTarget = String(h.id) === historyId && h.isbn === isbn
 
       if (!isTarget) {

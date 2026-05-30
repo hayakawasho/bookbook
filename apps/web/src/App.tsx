@@ -1,9 +1,9 @@
-import { AppProvider, useAppContext, type AppTab } from './_states/AppContext'
 import { BottomTabs } from './_components/layout/BottomTabs'
+import { CheckoutHistoryScreen } from './_components/page/checkout-history'
 import { HomeScreen } from './_components/page/home'
 import { LibraryScreen } from './_components/page/library'
-import { CheckoutHistoryScreen } from './_components/page/checkout-history'
 import { LoginScreen } from './_components/page/login'
+import { AppProvider, type AppTab, useAppContext } from './_states/AppContext'
 import './App.css'
 
 function ActiveTabPanel({ tab }: { tab: AppTab }) {
@@ -22,9 +22,7 @@ function AppContent() {
 
   if (authLoading) {
     return (
-      <div className="grid h-dvh place-items-center bg-background text-text">
-        読み込み中...
-      </div>
+      <div className="grid h-dvh place-items-center bg-background text-text">読み込み中...</div>
     )
   }
 

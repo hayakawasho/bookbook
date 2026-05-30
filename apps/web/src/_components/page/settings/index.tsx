@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import type { Location } from '../../../_foundation/const'
 import { useAppContext } from '../../../_states/AppContext'
 import { LocationSettingsScreen } from './LocationSettingsScreen'

@@ -1,7 +1,7 @@
-import { SettingsScreen } from '../settings'
 import { Header } from '../../ui/Header'
-import { Toast } from '../../ui/Toast'
 import { IconCog } from '../../ui/icon'
+import { Toast } from '../../ui/Toast'
+import { SettingsScreen } from '../settings'
 import { HistoryList } from './HistoryList'
 import { HistorySubTabs } from './HistorySubTabs'
 import { useCheckoutHistoryScreen } from './useCheckoutHistoryScreen'
@@ -24,7 +24,9 @@ export function CheckoutHistoryScreen() {
   }
 
   return (
-    <div className={`flex flex-col ${(borrowing.length === 0 || returned.length === 0) ? 'h-full' : ''}`}>
+    <div
+      className={`flex flex-col ${borrowing.length === 0 || returned.length === 0 ? 'h-full' : ''}`}
+    >
       <Header
         title="貸出履歴"
         rightAction={
@@ -39,10 +41,7 @@ export function CheckoutHistoryScreen() {
         }
       />
 
-      <HistorySubTabs
-        activeTab={historySubTab}
-        onChangeTab={setHistorySubTab}
-      />
+      <HistorySubTabs activeTab={historySubTab} onChangeTab={setHistorySubTab} />
 
       <HistoryList
         activeTab={historySubTab}
@@ -52,11 +51,7 @@ export function CheckoutHistoryScreen() {
       />
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDismiss={() => setToast(null)}
-        />
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
     </div>
   )

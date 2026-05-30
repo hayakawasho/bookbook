@@ -1,7 +1,7 @@
-import { History } from '../../_models/history'
 import type { Location } from '../../_foundation/const'
+import { History } from '../../_models/history'
 import type { HistoryQuery, HistoryRepository } from './interface'
-import { toHistoryInput, type HistoryWire } from './mappers'
+import { type HistoryWire, toHistoryInput } from './mappers'
 
 export class HttpHistoryRepository implements HistoryRepository {
   constructor(private readonly baseUrl: string) {}
@@ -20,7 +20,7 @@ export class HttpHistoryRepository implements HistoryRepository {
     }
 
     const raw = (await res.json()) as HistoryWire[]
-    return raw.map(dto => History.create(toHistoryInput(dto)))
+    return raw.map((dto) => History.create(toHistoryInput(dto)))
   }
 
   async createCheckout(isbn: string, location: Location): Promise<History> {

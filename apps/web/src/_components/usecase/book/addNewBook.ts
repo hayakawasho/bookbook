@@ -1,5 +1,9 @@
 import type { Location } from '../../../_foundation/const'
-import { useCaseResultError, useCaseResultOk, type UseCaseResult } from '../../../_foundation/result'
+import {
+  type UseCaseResult,
+  useCaseResultError,
+  useCaseResultOk,
+} from '../../../_foundation/result'
 import type { ExternalBookInfo } from '../../../_repositories/books/interface'
 import { type BookDeps } from './shared'
 

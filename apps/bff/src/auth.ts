@@ -22,7 +22,10 @@ type SessionPayloadV1 = {
 
 export function parseAllowedDomains(raw: string | undefined): string[] {
   if (!raw?.trim()) return []
-  return raw.split(',').map(d => d.trim().toLowerCase()).filter(Boolean)
+  return raw
+    .split(',')
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean)
 }
 
 /** Workspace の hd とメールドメインのどちらかが許可リストに含まれるか */
@@ -76,7 +79,11 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
   )
 }
 
-export async function signSession(secret: string, user: SessionUser, maxAgeSec: number): Promise<string> {
+export async function signSession(
+  secret: string,
+  user: SessionUser,
+  maxAgeSec: number,
+): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + maxAgeSec
   const payload: SessionPayloadV1 = {
     v: 1,
@@ -108,7 +115,8 @@ export async function verifySession(secret: string, token: string): Promise<Sess
   } catch {
     return null
   }
-  if (payload.v !== 1 || typeof payload.email !== 'string' || typeof payload.exp !== 'number') return null
+  if (payload.v !== 1 || typeof payload.email !== 'string' || typeof payload.exp !== 'number')
+    return null
   if (payload.exp < Math.floor(Date.now() / 1000)) return null
 
   let sig: Uint8Array
@@ -118,7 +126,12 @@ export async function verifySession(secret: string, token: string): Promise<Sess
     return null
   }
   const key = await importHmacKey(secret)
-  const ok = await crypto.subtle.verify('HMAC', key, sig as BufferSource, utf8(payloadStr) as BufferSource)
+  const ok = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    sig as BufferSource,
+    utf8(payloadStr) as BufferSource,
+  )
   if (!ok) return null
 
   return { email: payload.email, name: payload.name, hd: payload.hd }
@@ -132,4 +145,4 @@ export function requestUsesHttps(urlStr: string): boolean {
   }
 }
 
-export { SESSION_MAX_AGE_SEC, CSRF_MAX_AGE_SEC }
+export { CSRF_MAX_AGE_SEC, SESSION_MAX_AGE_SEC }

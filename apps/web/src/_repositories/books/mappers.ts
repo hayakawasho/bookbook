@@ -1,6 +1,7 @@
 import { parseDateOrUndefined } from '@bookbook/utils'
-import { toBookId } from '../../_models/book'
+
 import type { BookDto, ExternalBookDto } from '../../_models/book'
+import { toBookId } from '../../_models/book'
 import type { ExternalBookInfo } from './interface'
 
 export function toBookInput(dto: BookDto) {

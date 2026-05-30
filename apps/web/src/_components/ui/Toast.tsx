@@ -14,9 +14,7 @@ export function Toast({ message, type, onDismiss }: ToastProps) {
   const [exiting, setExiting] = useState(false)
 
   useEffect(() => {
-    const reducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const enterMs = reducedMotion ? 1 : ENTER_MS
 
     const startExitTimer = window.setTimeout(() => {
@@ -32,9 +30,7 @@ export function Toast({ message, type, onDismiss }: ToastProps) {
     if (!exiting) {
       return
     }
-    const reducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const exitMs = reducedMotion ? 1 : EXIT_MS
     const doneTimer = window.setTimeout(onDismiss, exitMs)
     return () => {

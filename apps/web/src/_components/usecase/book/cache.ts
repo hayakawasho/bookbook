@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useSWRConfig } from 'swr'
+
 import type { Location } from '../../../_foundation/const'
 import { Book, type Book as BookType } from '../../../_models/book'
 import type { FindByIsbnResult } from '../../../_repositories/books/interface'
@@ -23,6 +24,7 @@ export const bookCacheKeyGenerator = {
 }
 
 type BookCacheMutator = ReturnType<typeof useBookCacheMutator>
+
 export type { BookCacheMutator }
 
 export function useBookCacheMutator() {
@@ -52,7 +54,7 @@ export function useBookCacheMutator() {
             return isBookListCacheKey(key, loc)
           },
           (current: BookType[] | undefined) => {
-            return current?.map(b => {
+            return current?.map((b) => {
               if (String(b.id) === isbn) {
                 return Book.create({ ...b, ...patch })
               }

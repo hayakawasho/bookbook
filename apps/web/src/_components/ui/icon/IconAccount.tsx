@@ -1,4 +1,5 @@
 import type { FC } from 'react'
+
 import type { IconProps } from './types'
 import { iconSizePx } from './types'
 

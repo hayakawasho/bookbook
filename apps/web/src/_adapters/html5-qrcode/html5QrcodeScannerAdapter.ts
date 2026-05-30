@@ -1,13 +1,8 @@
-import {
-  Html5Qrcode,
-  Html5QrcodeSupportedFormats,
-} from 'html5-qrcode'
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 
 import type { BarcodeScannerAdapter, ScanOptions } from '../../_foundation/barcodeScannerAdapter'
 
-const EAN_13_ONLY: Html5QrcodeSupportedFormats[] = [
-  Html5QrcodeSupportedFormats.EAN_13,
-]
+const EAN_13_ONLY: Html5QrcodeSupportedFormats[] = [Html5QrcodeSupportedFormats.EAN_13]
 
 /** 画像ファイル読取用の非表示スロット（カメラ用要素と競合しない） */
 const FILE_SLOT_ID = 'bookbook-html5qrcode-file-slot'
@@ -92,7 +87,7 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
   private async disposeCamera(): Promise<void> {
     const qr = this.cameraQr
     this.cameraQr = null
-    
+
     if (!qr) {
       return
     }
@@ -122,7 +117,7 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
             height: 101,
           }),
         },
-        decodedText => {
+        (decodedText) => {
           if (!isIsbnBarcode(decodedText)) {
             return
           }

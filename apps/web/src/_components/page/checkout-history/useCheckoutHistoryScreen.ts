@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react'
-import { History } from '../../../_models/history'
+
 import type { History as HistoryType } from '../../../_models/history'
-import { useBorrowingItems, useHistoryItems, useBookUsecase } from '../../usecase/book'
+import { History } from '../../../_models/history'
 import { useAppContext } from '../../../_states/AppContext'
+import { useBookUsecase, useBorrowingItems, useHistoryItems } from '../../usecase/book'
 import type { HistorySubTab, ToastState } from './types'
 
 export function useCheckoutHistoryScreen() {
@@ -17,7 +18,7 @@ export function useCheckoutHistoryScreen() {
 
   const isLoading = borrowingLoading || historyLoading
   const borrowing = borrowingData
-  const returned = historyData.filter(h => History.isReturned(h))
+  const returned = historyData.filter((h) => History.isReturned(h))
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type })

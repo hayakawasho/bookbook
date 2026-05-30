@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import noImageFallback from '../../../assets/no_image.png'
 
 type BookCoverProps = { src?: string; alt: string }

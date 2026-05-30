@@ -1,6 +1,10 @@
 import type { Location } from '../../../_foundation/const'
-import { useCaseResultError, useCaseResultOk, type UseCaseResult } from '../../../_foundation/result'
-import { syncRegistered, type BookDeps } from './shared'
+import {
+  type UseCaseResult,
+  useCaseResultError,
+  useCaseResultOk,
+} from '../../../_foundation/result'
+import { type BookDeps, syncRegistered } from './shared'
 
 export async function checkoutBook(
   deps: BookDeps,

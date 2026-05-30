@@ -43,7 +43,9 @@ export function SettingsMainView({
         >
           <span className="text-base text-text">拠点</span>
           <span className="flex items-center gap-2 min-w-0">
-            <span className="text-sm text-text-muted truncate">{LOCATION_MAP[currentLocation]}</span>
+            <span className="text-sm text-text-muted truncate">
+              {LOCATION_MAP[currentLocation]}
+            </span>
             <span className="shrink-0" aria-hidden>
               <IconArrowNext size={20} />
             </span>

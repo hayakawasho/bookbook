@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+
 import type { History } from '../../../_models/history'
 import { BookItem } from '../../usecase/book/BookItem'
 import type { HistorySubTab } from './types'
@@ -18,11 +19,7 @@ function formatLoanDate(date: Date) {
 }
 
 function LoanDateMeta({ date }: { date: Date }) {
-  return (
-    <p className="m-0 mb-1 text-xs leading-[17px]">
-      貸出日：{formatLoanDate(date)}
-    </p>
-  )
+  return <p className="m-0 mb-1 text-xs leading-[17px]">貸出日：{formatLoanDate(date)}</p>
 }
 
 function HistoryRow({ history, action }: { history: History; action?: ReactNode }) {
@@ -56,17 +53,14 @@ function ReturnedEmptyState() {
   )
 }
 
-function BorrowingList({
-  borrowing,
-  onReturn,
-}: Pick<HistoryListProps, 'borrowing' | 'onReturn'>) {
+function BorrowingList({ borrowing, onReturn }: Pick<HistoryListProps, 'borrowing' | 'onReturn'>) {
   if (borrowing.length === 0) {
     return <BorrowingEmptyState />
   }
 
   return (
     <ul className="list-none m-0 p-0">
-      {borrowing.map(history => (
+      {borrowing.map((history) => (
         <HistoryRow
           key={String(history.id)}
           history={history}
@@ -92,19 +86,14 @@ function ReturnedList({ returned }: Pick<HistoryListProps, 'returned'>) {
 
   return (
     <ul className="list-none m-0 p-0">
-      {returned.map(history => (
+      {returned.map((history) => (
         <HistoryRow key={String(history.id)} history={history} />
       ))}
     </ul>
   )
 }
 
-export function HistoryList({
-  activeTab,
-  borrowing,
-  returned,
-  onReturn,
-}: HistoryListProps) {
+export function HistoryList({ activeTab, borrowing, returned, onReturn }: HistoryListProps) {
   if (activeTab === 'borrowing') {
     return <BorrowingList borrowing={borrowing} onReturn={onReturn} />
   }

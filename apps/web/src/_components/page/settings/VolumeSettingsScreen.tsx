@@ -37,9 +37,7 @@ export function VolumeSettingsScreen({ onBack }: VolumeSettingsScreenProps) {
             max={100}
             step={1}
             value={state.volume}
-            onChange={e =>
-              dispatch({ type: 'SET_VOLUME', payload: Number(e.target.value) })
-            }
+            onChange={(e) => dispatch({ type: 'SET_VOLUME', payload: Number(e.target.value) })}
             className="flex-1 min-w-0 volume-range"
             aria-valuemin={0}
             aria-valuemax={100}
@@ -51,7 +49,7 @@ export function VolumeSettingsScreen({ onBack }: VolumeSettingsScreenProps) {
           </span>
         </div>
         <p className="m-0 text-xs leading-[17px] text-text-muted max-w-[320px]">
-        	貸出完了時の音量を変更できます。
+          貸出完了時の音量を変更できます。
         </p>
       </div>
     </div>

@@ -8,13 +8,19 @@ const SHELL_CACHE = 'bookbook-shell-v1'
 const STATIC_CACHE = 'bookbook-static-v1'
 
 /** インストール時に先読みする（失敗しても無視） */
-const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png']
+const SHELL_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+]
 
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then(async cache => {
+    caches.open(SHELL_CACHE).then(async (cache) => {
       await Promise.all(
-        SHELL_URLS.map(async url => {
+        SHELL_URLS.map(async (url) => {
           try {
             await cache.add(new Request(url, { cache: 'reload' }))
           } catch {
@@ -27,11 +33,11 @@ self.addEventListener('install', event => {
   self.skipWaiting()
 })
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
+    caches.keys().then((keys) =>
       Promise.all(
-        keys.map(key => {
+        keys.map((key) => {
           if (key !== SHELL_CACHE && key !== STATIC_CACHE) {
             return caches.delete(key)
           }
@@ -43,7 +49,7 @@ self.addEventListener('activate', event => {
   self.clients.claim()
 })
 
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
   const req = event.request
   if (req.method !== 'GET') {
     return
@@ -75,11 +81,11 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.open(STATIC_CACHE).then(async cache => {
+    caches.open(STATIC_CACHE).then(async (cache) => {
       const cached = await cache.match(req)
 
       const networkPromise = fetch(req)
-        .then(res => {
+        .then((res) => {
           if (res.ok) {
             cache.put(req, res.clone())
           }
