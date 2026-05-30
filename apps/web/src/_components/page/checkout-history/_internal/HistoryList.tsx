@@ -1,8 +1,9 @@
-import { BookItem } from '../../usecase/book/BookItem'
+import { ListPlaceholder } from '../../../ui/ListPlaceholder'
+import { BookItem } from '../../../usecase/book/BookItem'
 
 import type { ReactNode } from 'react'
-import type { History } from '../../../_models/history'
-import type { HistorySubTab } from './types'
+import type { History } from '../../../../_models/history'
+import type { HistorySubTab } from '../types'
 
 type HistoryListProps = {
   borrowing: History[]
@@ -36,20 +37,21 @@ function HistoryRow({ history, action }: { history: History; action?: ReactNode 
 
 function BorrowingEmptyState() {
   return (
-    <div className="h-full grid items-center text-sm text-center">
-      <p className="">
-        現在本を借りていません
-        <span className="block text-text-muted mt-2">いますぐ本棚を覗いてみよう！</span>
-      </p>
-    </div>
+    <ListPlaceholder
+      variant="empty"
+      message="現在本を借りていません"
+      detail={<span className="block text-text-muted mt-2">いますぐ本棚を覗いてみよう！</span>}
+    />
   )
 }
 
 function ReturnedEmptyState() {
   return (
-    <div className="h-full grid items-center gap-2 text-sm text-center">
-      <p className="text-sm text-text-muted">社内の本を借りてみよう！</p>
-    </div>
+    <ListPlaceholder
+      variant="empty"
+      message="社内の本を借りてみよう！"
+      messageClassName="text-sm text-center text-text-muted"
+    />
   )
 }
 

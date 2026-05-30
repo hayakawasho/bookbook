@@ -1,4 +1,4 @@
-import type { HistorySubTab } from './types'
+import type { HistorySubTab } from '../types'
 
 type HistorySubTabsProps = {
   activeTab: HistorySubTab

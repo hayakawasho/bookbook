@@ -1,6 +1,6 @@
-import { useAppContext } from '../../../_states/AppContext'
-import { Header } from '../../ui/Header'
-import { IconArrowPrev, IconVolumeMute, IconVolumeUp } from '../../ui/icon'
+import { useAppContext } from '../../../../_states/AppContext'
+import { Header } from '../../../ui/Header'
+import { IconArrowPrev, IconVolumeMute, IconVolumeUp } from '../../../ui/icon'
 
 type VolumeSettingsScreenProps = {
   onBack: () => void

@@ -3,8 +3,8 @@ import { IconCog } from '../../ui/icon'
 import { Toast } from '../../ui/Toast'
 import { SettingsScreen } from '../settings'
 
-import { HistoryList } from './HistoryList'
-import { HistorySubTabs } from './HistorySubTabs'
+import { HistoryList } from './_internal/HistoryList'
+import { HistorySubTabs } from './_internal/HistorySubTabs'
 import { useCheckoutHistoryScreen } from './useCheckoutHistoryScreen'
 
 export function CheckoutHistoryScreen() {

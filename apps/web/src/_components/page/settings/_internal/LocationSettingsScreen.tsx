@@ -1,8 +1,8 @@
-import { LOCATION_MAP } from '../../../_foundation/const'
-import { Header } from '../../ui/Header'
-import { IconArrowPrev } from '../../ui/icon'
+import { LOCATION_MAP } from '../../../../_foundation/const'
+import { Header } from '../../../ui/Header'
+import { IconArrowPrev } from '../../../ui/icon'
 
-import type { Location } from '../../../_foundation/const'
+import type { Location } from '../../../../_foundation/const'
 
 type LocationSettingsScreenProps = {
   currentLocation: Location

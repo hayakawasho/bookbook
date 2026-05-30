@@ -15,6 +15,37 @@
 - `apps/web/src/_components/page`: 画面単位のコンポーネント。状態接続・ユースケース呼び出し・`layout` / `usecase` の組み合わせを担う。
 - `apps/web/src/_components/layout`: ページ間を横断する共通レイアウトや画面構造。タブ、ヘッダー、ナビゲーションなどを含む。
 
+### `ui` と `page` の置き分け
+
+画面ごとに次の形を目指す。
+
+```
+page/<screen>/
+  index.tsx           # 画面シェル（配線・組み立てのみ、目安 80 行以下）
+  useXxxScreen.ts     # 任意。画面 hook の組み立て（肥大化したら hooks/ に分割）
+  types.ts
+  _internal/          # その画面だけの見た目（画面外から import しない）
+```
+
+対象画面: `home` / `library` / `checkout-history` / `settings` / `login`。いずれも `index.tsx` はシェル、画面固有 UI は `_internal/` に置く。`_components` や `_models` と同様、先頭 `_` で「その画面の実装詳細」と分かるようにする（汎用 `components` 名との混同も避ける）。
+
+**`ui` に置く条件（すべて満たす）**
+
+- 2 画面以上で使う、または使う見込みが明確
+- props に `Book` / `History` / `Location` などドメイン型を含めない（文字列・`ReactNode`・汎用コールバックのみ）
+- `_states` / `_repositories` / `usecase` / `page` / `layout` を import しない（下記依存ルール）
+
+**`page/<screen>/_internal` に置く条件**
+
+- その画面（または同一タブ配下）だけのレイアウト・文言・空状態
+- ドメイン型を props に持ってよい
+- 他画面や `App.tsx` から直接 import しない（公開面は `index.tsx` の `XxxScreen` のみ）
+
+**`page/<screen>/index.tsx` の責務**
+
+- hook の呼び出し、子コンポーネントの組み立て、モーダル系（`Dialog` / `BottomSheet` / `Toast`）の表示制御
+- 画面固有の JSX を直書きせず、`_internal/` に委譲する
+
 ## ドメインと API の境界
 
 `_book` は本リソースに関する `model` / `usecase` を持つドメイン領域です。API 通信は `_repositories` に閉じ込め、ページや UI コンポーネントから直接 fetch しない方針です。

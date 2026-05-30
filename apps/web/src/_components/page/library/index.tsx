@@ -1,84 +1,12 @@
 import { useState } from 'react'
 
 import { Header } from '../../ui/Header'
-import { IconCog, IconSearch } from '../../ui/icon'
+import { IconCog } from '../../ui/icon'
 import { useBookItems } from '../../usecase/book'
-import { BookItem, BookStockSummaryLines } from '../../usecase/book/BookItem'
 import { SettingsScreen } from '../settings'
 
-import type { Book } from '../../../_models/book'
-
-function getLibraryEmptyMessage(query: string): string {
-  const hasQuery = query.trim().length > 0
-
-  if (hasQuery) {
-    return `『${query}』に関連する本は見つかりませんでした`
-  }
-
-  return '本が登録されていません'
-}
-
-function LibraryLoadingState() {
-  return (
-    <div className="h-full grid items-center">
-      <p className="text-sm text-center text-text-muted">読み込み中…</p>
-    </div>
-  )
-}
-
-function LibraryErrorState() {
-  return (
-    <div className="h-full grid items-center">
-      <p className="text-sm text-center text-error">データの取得に失敗しました</p>
-    </div>
-  )
-}
-
-function LibraryEmptyState({ message }: { message: string }) {
-  return (
-    <div className="h-full grid items-center gap-2 text-sm text-center">
-      <p className="text-sm">{message}</p>
-    </div>
-  )
-}
-
-function LibraryBookList({ books }: { books: Book[] }) {
-  return (
-    <ul className="list-none m-0 p-0">
-      {books.map((book) => (
-        <li
-          key={String(book.id)}
-          className="border-b border-border first:border-t first:border-border"
-        >
-          <BookItem book={book} action={<BookStockSummaryLines book={book} />} />
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-type LibraryBodyProps = {
-  books: Book[]
-  query: string
-  isLoading: boolean
-  error: unknown
-}
-
-function LibraryBody({ books, query, isLoading, error }: LibraryBodyProps) {
-  if (isLoading) {
-    return <LibraryLoadingState />
-  }
-
-  if (error) {
-    return <LibraryErrorState />
-  }
-
-  if (books.length === 0) {
-    return <LibraryEmptyState message={getLibraryEmptyMessage(query)} />
-  }
-
-  return <LibraryBookList books={books} />
-}
+import { LibraryListBody } from './_internal/LibraryListBody'
+import { LibrarySearchBar } from './_internal/LibrarySearchBar'
 
 export function LibraryScreen() {
   const [query, setQuery] = useState('')
@@ -107,25 +35,8 @@ export function LibraryScreen() {
           </button>
         }
       />
-      <div className="px-[22px] py-3 bg-surface border-b border-border shrink-0 sticky top-0">
-        <label className="sr-only" htmlFor="library-search">
-          本棚を検索
-        </label>
-        <div className="flex items-center gap-2 relative">
-          <IconSearch size={22} className="absolute text-text-muted" />
-          <input
-            id="library-search"
-            className="w-full min-h-[44px] border-0 border-b border-border bg-transparent text-sm text-text outline-none search-input pl-[30px]"
-            type="search"
-            autoComplete="off"
-            placeholder="探す"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <LibraryBody books={books} query={query} isLoading={isLoading} error={error} />
+      <LibrarySearchBar query={query} onChangeQuery={setQuery} />
+      <LibraryListBody books={books} query={query} isLoading={isLoading} error={error} />
     </div>
   )
 }

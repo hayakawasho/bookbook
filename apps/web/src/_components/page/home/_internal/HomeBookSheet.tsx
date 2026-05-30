@@ -1,9 +1,9 @@
-import { Book } from '../../../_models/book'
-import { IconPlus } from '../../ui/icon'
-import { BookCover } from '../../usecase/book/BookCover'
-import { BookItem, BookStockSummaryLines } from '../../usecase/book/BookItem'
+import { Book } from '../../../../_models/book'
+import { IconPlus } from '../../../ui/icon'
+import { BookCover } from '../../../usecase/book/BookCover'
+import { BookItem, BookStockSummaryLines } from '../../../usecase/book/BookItem'
 
-import type { ExternalBookInfo } from '../../../_repositories/books/interface'
+import type { ExternalBookInfo } from '../../../../_repositories/books/interface'
 
 type HomeExistingBookSheetProps = {
   book: Book

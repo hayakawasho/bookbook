@@ -2,9 +2,9 @@ import { useState } from 'react'
 
 import { useAppContext } from '../../../_states/AppContext'
 
-import { LocationSettingsScreen } from './LocationSettingsScreen'
-import { SettingsMainView } from './SettingsMainView'
-import { VolumeSettingsScreen } from './VolumeSettingsScreen'
+import { LocationSettingsScreen } from './_internal/LocationSettingsScreen'
+import { SettingsMainView } from './_internal/SettingsMainView'
+import { VolumeSettingsScreen } from './_internal/VolumeSettingsScreen'
 
 import type { Location } from '../../../_foundation/const'
 import type { SettingsView } from './types'
