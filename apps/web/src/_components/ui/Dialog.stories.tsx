@@ -1,7 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
 import { fn } from 'storybook/test'
 
 import { Dialog } from './Dialog'
+
+import type { Meta, StoryObj } from '@storybook/react'
 
 const meta = {
   component: Dialog,

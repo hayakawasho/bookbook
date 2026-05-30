@@ -1,11 +1,13 @@
-import type { Location } from '../../../_foundation/const'
 import {
   type UseCaseResult,
   useCaseResultError,
   useCaseResultOk,
 } from '../../../_foundation/result'
-import type { ExternalBookInfo } from '../../../_repositories/books/interface'
+
 import { type BookDeps } from './shared'
+
+import type { Location } from '../../../_foundation/const'
+import type { ExternalBookInfo } from '../../../_repositories/books/interface'
 
 export async function addNewBook(
   deps: BookDeps,

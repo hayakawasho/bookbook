@@ -1,20 +1,12 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from 'react'
-import { useBookItem, useBookUsecase } from '../../usecase/book'
-import type { Book } from '../../../_models/book'
-import type {
-  ExternalBookInfo,
-  FindByIsbnResult,
-} from '../../../_repositories/books/interface'
+import { type ChangeEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+
 import { normalizeIsbnBarcode } from '../../../_foundation/utils'
-import type { Location } from '../../../_foundation/const'
 import { useAppContext } from '../../../_states/AppContext'
+import { useBookItem, useBookUsecase } from '../../usecase/book'
+
+import type { Location } from '../../../_foundation/const'
+import type { Book } from '../../../_models/book'
+import type { ExternalBookInfo, FindByIsbnResult } from '../../../_repositories/books/interface'
 import type { DialogConfig, SheetMode, ToastState } from './types'
 
 export const HOME_BARCODE_CAMERA_ELEMENT_ID = 'home-html5qrcode-camera'
@@ -166,7 +158,7 @@ export function useHomeScreen() {
 
     barcodeScanner.start({
       elementId: HOME_BARCODE_CAMERA_ELEMENT_ID,
-      onDetected: raw => {
+      onDetected: (raw) => {
         const sheetBlocksScanWhileOpen = sheetModeRef.current !== null
 
         if (sheetBlocksScanWhileOpen) {
@@ -175,7 +167,7 @@ export function useHomeScreen() {
 
         lookupByBarcodeRaw(raw)
       },
-      onError: err => {
+      onError: (err) => {
         setCameraOpen(false)
         showToast(err.message, 'error')
       },
@@ -273,13 +265,7 @@ export function useHomeScreen() {
         }),
       )
     },
-    [
-      clearScanSession,
-      handleSheetClose,
-      showToast,
-      state.location,
-      usecase,
-    ],
+    [clearScanSession, handleSheetClose, showToast, state.location, usecase],
   )
 
   return {

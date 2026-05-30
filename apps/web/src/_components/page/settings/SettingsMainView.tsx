@@ -1,7 +1,8 @@
-import type { Location } from '../../../_foundation/const'
 import { LOCATION_MAP } from '../../../_foundation/const'
 import { Header } from '../../ui/Header'
 import { IconArrowNext, IconArrowPrev } from '../../ui/icon'
+
+import type { Location } from '../../../_foundation/const'
 
 type SettingsMainViewProps = {
   currentLocation: Location

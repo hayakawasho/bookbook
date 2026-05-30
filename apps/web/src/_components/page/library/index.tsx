@@ -1,11 +1,12 @@
 import { useState } from 'react'
 
-import type { Book } from '../../../_models/book'
 import { Header } from '../../ui/Header'
 import { IconCog, IconSearch } from '../../ui/icon'
 import { useBookItems } from '../../usecase/book'
 import { BookItem, BookStockSummaryLines } from '../../usecase/book/BookItem'
 import { SettingsScreen } from '../settings'
+
+import type { Book } from '../../../_models/book'
 
 function getLibraryEmptyMessage(query: string): string {
   const hasQuery = query.trim().length > 0

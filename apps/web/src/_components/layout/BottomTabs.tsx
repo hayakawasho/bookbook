@@ -1,4 +1,3 @@
-import type { AppTab } from '../../_states/AppContext'
 import { useAppContext } from '../../_states/AppContext'
 import {
   IconAccount,
@@ -8,6 +7,8 @@ import {
   IconLibrary,
   IconLibraryFilled,
 } from '../ui/icon'
+
+import type { AppTab } from '../../_states/AppContext'
 
 const TABS: { id: AppTab; label: string }[] = [
   { id: 'home', label: 'ホーム' },

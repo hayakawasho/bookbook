@@ -1,7 +1,7 @@
-import type { FC } from 'react'
-
-import type { IconProps } from './types'
 import { iconSizePx } from './types'
+
+import type { FC } from 'react'
+import type { IconProps } from './types'
 
 type IconAccountFilledProps = IconProps & {
   /** 目などくり抜き部分の塗り（タブバー背景に合わせる） */

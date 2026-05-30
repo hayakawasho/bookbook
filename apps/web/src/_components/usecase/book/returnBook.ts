@@ -1,10 +1,12 @@
-import type { Location } from '../../../_foundation/const'
 import {
   type UseCaseResult,
   useCaseResultError,
   useCaseResultOk,
 } from '../../../_foundation/result'
+
 import { type BookDeps, syncRegistered } from './shared'
+
+import type { Location } from '../../../_foundation/const'
 
 export async function returnBook(
   deps: BookDeps,

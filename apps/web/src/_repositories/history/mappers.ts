@@ -1,7 +1,8 @@
 import { parseDateOrUndefined } from '@bookbook/utils'
 
-import type { HistoryDto } from '../../_models/history'
 import { toHistoryId } from '../../_models/history'
+
+import type { HistoryDto } from '../../_models/history'
 
 /** BFF が在庫フィールドを含めて返す場合があるため、mapping で書誌 + 履歴のみ取り出す */
 export type HistoryWire = HistoryDto & {

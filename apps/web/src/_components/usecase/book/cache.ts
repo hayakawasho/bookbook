@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { useSWRConfig } from 'swr'
 
-import type { Location } from '../../../_foundation/const'
 import { Book, type Book as BookType } from '../../../_models/book'
+import { useAppContext } from '../../../_states/AppContext'
+
+import type { Location } from '../../../_foundation/const'
 import type { FindByIsbnResult } from '../../../_repositories/books/interface'
 import type { HistoryQuery } from '../../../_repositories/history/interface'
-import { useAppContext } from '../../../_states/AppContext'
 
 function isBookListCacheKey(key: unknown, location: Location): boolean {
   return Array.isArray(key) && key[0] === 'book' && key[1] === 'list' && key[2] === location

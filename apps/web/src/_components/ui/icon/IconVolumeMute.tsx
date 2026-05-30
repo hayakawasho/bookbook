@@ -1,7 +1,7 @@
-import type { FC } from 'react'
-
-import type { IconProps } from './types'
 import { iconSizePx } from './types'
+
+import type { FC } from 'react'
+import type { IconProps } from './types'
 
 export const IconVolumeMute: FC<IconProps> = ({
   size = 24,

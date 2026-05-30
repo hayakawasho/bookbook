@@ -1,6 +1,7 @@
+import { History, toHistoryId } from '../../_models/history'
+
 import type { Location } from '../../_foundation/const'
 import type { Book } from '../../_models/book'
-import { History, toHistoryId } from '../../_models/history'
 import type { BookRepository } from '../books/interface'
 import type { HistoryQuery, HistoryRepository } from './interface'
 

@@ -1,7 +1,9 @@
-import type { Location } from '../../_foundation/const'
 import { History } from '../../_models/history'
-import type { HistoryQuery, HistoryRepository } from './interface'
+
 import { type HistoryWire, toHistoryInput } from './mappers'
+
+import type { Location } from '../../_foundation/const'
+import type { HistoryQuery, HistoryRepository } from './interface'
 
 export class HttpHistoryRepository implements HistoryRepository {
   constructor(private readonly baseUrl: string) {}

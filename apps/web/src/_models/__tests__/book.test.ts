@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { Book } from '../book/book'
 import { toBookId } from '../book/ids'
+
 import { expectImmutableMutation } from './expectImmutableMutation'
 
 function sampleBook(overrides: Partial<Parameters<typeof Book.create>[0]> = {}) {

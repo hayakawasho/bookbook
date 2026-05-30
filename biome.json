@@ -33,13 +33,22 @@
           "level": "on",
           "options": {
             "groups": [
-              [":BUN:", ":NODE:"],
+              { "source": ":NODE:", "type": false },
               ":BLANK_LINE:",
-              [":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:", "!@bookbook/**"],
+              {
+                "source": [":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:", "!@bookbook/**"],
+                "type": false
+              },
               ":BLANK_LINE:",
-              ["@bookbook/**"],
+              { "source": ["@bookbook/**"], "type": false },
               ":BLANK_LINE:",
-              ":PATH:"
+              { "source": ["../**", "../*"], "type": false },
+              ":BLANK_LINE:",
+              { "source": ["./**", "./*"], "type": false },
+              ":BLANK_LINE:",
+              { "type": false },
+              ":BLANK_LINE:",
+              { "type": true }
             ]
           }
         }

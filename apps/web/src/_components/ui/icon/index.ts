@@ -11,5 +11,6 @@ export { IconPlus } from './IconPlus'
 export { IconSearch } from './IconSearch'
 export { IconVolumeMute } from './IconVolumeMute'
 export { IconVolumeUp } from './IconVolumeUp'
-export type { IconProps } from './types'
 export { iconSizePx } from './types'
+
+export type { IconProps } from './types'

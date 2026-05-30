@@ -15,18 +15,19 @@ import {
   persistThemeMode,
   resolveInitialThemeMode,
 } from '../_foundation/appPreferencesStorage'
-import type { BarcodeScannerAdapter } from '../_foundation/barcodeScannerAdapter'
 import { MockBarcodeScannerAdapter } from '../_foundation/barcodeScannerAdapter'
-import type { Location } from '../_foundation/const'
 import { HttpNotificationGateway } from '../_foundation/httpNotificationGateway'
-import type { NotificationGateway } from '../_foundation/notificationGateway'
 import { MockNotificationGateway } from '../_foundation/notificationGateway'
 import { HttpBookRepository } from '../_repositories/books/httpRepository'
-import type { BookRepository } from '../_repositories/books/interface'
 import { MockBookRepository } from '../_repositories/books/repository'
 import { HttpHistoryRepository } from '../_repositories/history/httpRepository'
-import type { HistoryRepository } from '../_repositories/history/interface'
 import { MockHistoryRepository } from '../_repositories/history/repository'
+
+import type { BarcodeScannerAdapter } from '../_foundation/barcodeScannerAdapter'
+import type { Location } from '../_foundation/const'
+import type { NotificationGateway } from '../_foundation/notificationGateway'
+import type { BookRepository } from '../_repositories/books/interface'
+import type { HistoryRepository } from '../_repositories/history/interface'
 
 const USE_HTTP_API = import.meta.env.VITE_USE_HTTP_API === 'true'
 const API_BASE = '/api'

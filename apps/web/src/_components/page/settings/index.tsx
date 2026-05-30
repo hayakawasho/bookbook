@@ -1,11 +1,13 @@
 import { useState } from 'react'
 
-import type { Location } from '../../../_foundation/const'
 import { useAppContext } from '../../../_states/AppContext'
+
 import { LocationSettingsScreen } from './LocationSettingsScreen'
 import { SettingsMainView } from './SettingsMainView'
-import type { SettingsView } from './types'
 import { VolumeSettingsScreen } from './VolumeSettingsScreen'
+
+import type { Location } from '../../../_foundation/const'
+import type { SettingsView } from './types'
 
 type SettingsScreenProps = {
   onBack: () => void

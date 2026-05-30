@@ -1,7 +1,7 @@
-import type { FC } from 'react'
-
-import type { IconProps } from './types'
 import { iconSizePx } from './types'
+
+import type { FC } from 'react'
+import type { IconProps } from './types'
 
 /** キャラ／履歴タブなど — アウトライン寄りのマスコット */
 export const IconAccount: FC<IconProps> = ({

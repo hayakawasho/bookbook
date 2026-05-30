@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
-
-import type { History } from '../../../_models/history'
 import { BookItem } from '../../usecase/book/BookItem'
+
+import type { ReactNode } from 'react'
+import type { History } from '../../../_models/history'
 import type { HistorySubTab } from './types'
 
 type HistoryListProps = {

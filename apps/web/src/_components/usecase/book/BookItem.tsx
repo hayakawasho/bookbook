@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
-
 import { Book } from '../../../_models/book'
+
 import { BookCover } from './BookCover'
+
+import type { ReactNode } from 'react'
 
 export type BookView = Pick<Book, 'title' | 'author' | 'publisher' | 'cover'>
 

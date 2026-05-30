@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react'
 
-import type { History as HistoryType } from '../../../_models/history'
 import { History } from '../../../_models/history'
 import { useAppContext } from '../../../_states/AppContext'
 import { useBookUsecase, useBorrowingItems, useHistoryItems } from '../../usecase/book'
+
+import type { History as HistoryType } from '../../../_models/history'
 import type { HistorySubTab, ToastState } from './types'
 
 export function useCheckoutHistoryScreen() {
