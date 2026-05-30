@@ -1,8 +1,8 @@
-import type { BookMetadata } from '../../../_book/model'
+import type { Book } from '../../../_models/book'
 import type { ExternalBookInfo } from '../../../_repositories/books/interface'
 
 export type SheetMode =
-  | { kind: 'existing'; book: BookMetadata }
+  | { kind: 'existing'; book: Book }
   | { kind: 'external'; book: ExternalBookInfo }
 
 export type DialogConfig = {

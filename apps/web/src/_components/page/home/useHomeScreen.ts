@@ -6,13 +6,14 @@ import {
   useState,
   type ChangeEvent,
 } from 'react'
-import { useBookItem, useBookUsecase } from '../../../_book/usecase'
-import type { BookMetadata } from '../../../_book/model'
+import { useBookItem, useBookUsecase } from '../../usecase/book'
+import type { Book } from '../../../_models/book'
 import type {
   ExternalBookInfo,
   FindByIsbnResult,
 } from '../../../_repositories/books/interface'
 import { normalizeIsbnBarcode } from '../../../_foundation/utils'
+import type { Location } from '../../../_foundation/const'
 import { useAppContext } from '../../../_states/AppContext'
 import type { DialogConfig, SheetMode, ToastState } from './types'
 
@@ -28,6 +29,49 @@ function sheetModeAfterLookup(bookResult: FindByIsbnResult): SheetMode | 'not-fo
   }
 
   return 'not-found'
+}
+
+function createBorrowAfterRegisterDialog(options: {
+  isbn: string
+  location: Location
+  usecase: ReturnType<typeof useBookUsecase>
+  showToast: (message: string, type: 'success' | 'error') => void
+  clearScanSession: () => void
+  handleSheetClose: () => void
+  setDialogConfig: (config: DialogConfig | null) => void
+}): DialogConfig {
+  const {
+    isbn,
+    location,
+    usecase,
+    showToast,
+    clearScanSession,
+    handleSheetClose,
+    setDialogConfig,
+  } = options
+
+  return {
+    message: 'このまま本を借りますか？',
+    confirmLabel: 'はい',
+    cancelLabel: 'いいえ',
+    width: 287,
+    onConfirm: async () => {
+      setDialogConfig(null)
+      const result = await usecase.checkoutBook(isbn, location)
+
+      if (result.err) {
+        showToast('貸出に失敗しました', 'error')
+        return
+      }
+
+      clearScanSession()
+      showToast('貸出が完了しました', 'success')
+    },
+    onCancel: () => {
+      setDialogConfig(null)
+      handleSheetClose()
+    },
+  }
 }
 
 export function useHomeScreen() {
@@ -124,9 +168,11 @@ export function useHomeScreen() {
       elementId: HOME_BARCODE_CAMERA_ELEMENT_ID,
       onDetected: raw => {
         const sheetBlocksScanWhileOpen = sheetModeRef.current !== null
+
         if (sheetBlocksScanWhileOpen) {
           return
         }
+
         lookupByBarcodeRaw(raw)
       },
       onError: err => {
@@ -166,8 +212,8 @@ export function useHomeScreen() {
   }, [])
 
   const handleCheckout = useCallback(
-    async (book: BookMetadata) => {
-      const result = await usecase.checkoutBook(book.isbn, state.location)
+    async (book: Book) => {
+      const result = await usecase.checkoutBook(String(book.id), state.location)
 
       if (result.err) {
         showToast('貸出に失敗しました', 'error')
@@ -177,10 +223,10 @@ export function useHomeScreen() {
       clearScanSession()
       showToast('貸出が完了しました', 'success')
     },
-    [clearScanSession, showToast, state.location, usecase]
+    [clearScanSession, showToast, state.location, usecase],
   )
 
-  const handleIncrementBook = (book: BookMetadata) => {
+  const handleRestockBook = (book: Book) => {
     setDialogConfig({
       message: `すでに${book.total}冊登録されています。\nこのまま追加しますか？`,
       confirmLabel: '追加する',
@@ -188,7 +234,7 @@ export function useHomeScreen() {
       width: 287,
       onConfirm: async () => {
         setDialogConfig(null)
-        const result = await usecase.incrementBook(book.isbn, state.location)
+        const result = await usecase.restockBook(String(book.id), state.location)
 
         if (result.err) {
           showToast('冊数の追加に失敗しました', 'error')
@@ -207,7 +253,6 @@ export function useHomeScreen() {
 
   const handleAddBook = useCallback(
     async (book: ExternalBookInfo) => {
-
       const result = await usecase.addNewBook(book, state.location)
 
       if (result.err) {
@@ -216,27 +261,17 @@ export function useHomeScreen() {
       }
 
       showToast('本棚に追加しました', 'success')
-
-      setDialogConfig({
-        message: 'このまま本を借りますか？',
-        confirmLabel: 'はい',
-        cancelLabel: 'いいえ',
-        width: 287,
-        onConfirm: async () => {
-          setDialogConfig(null)
-          const checkoutResult = await usecase.checkoutBook(book.isbn, state.location)
-          if (checkoutResult.err) {
-            showToast('貸出に失敗しました', 'error')
-            return
-          }
-          clearScanSession()
-          showToast('貸出が完了しました', 'success')
-        },
-        onCancel: () => {
-          setDialogConfig(null)
-          handleSheetClose()
-        },
-      })
+      setDialogConfig(
+        createBorrowAfterRegisterDialog({
+          isbn: book.isbn,
+          location: state.location,
+          usecase,
+          showToast,
+          clearScanSession,
+          handleSheetClose,
+          setDialogConfig,
+        }),
+      )
     },
     [
       clearScanSession,
@@ -244,7 +279,7 @@ export function useHomeScreen() {
       showToast,
       state.location,
       usecase,
-    ]
+    ],
   )
 
   return {
@@ -252,7 +287,7 @@ export function useHomeScreen() {
     dialogConfig,
     fileInputRef,
     handleAddBook,
-    handleIncrementBook,
+    handleRestockBook,
     handleChangeIsbnInput,
     handleCheckout,
     handleManualSearch,

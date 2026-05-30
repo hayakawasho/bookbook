@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
-import type { HistoryMetadata } from '../../../_book/model'
-import { useBorrowingItems, useHistoryItems, useBookUsecase } from '../../../_book/usecase'
+import { History } from '../../../_models/history'
+import type { History as HistoryType } from '../../../_models/history'
+import { useBorrowingItems, useHistoryItems, useBookUsecase } from '../../usecase/book'
 import { useAppContext } from '../../../_states/AppContext'
 import type { HistorySubTab, ToastState } from './types'
 
@@ -16,22 +17,24 @@ export function useCheckoutHistoryScreen() {
 
   const isLoading = borrowingLoading || historyLoading
   const borrowing = borrowingData
-  const returned = historyData.filter(h => h.isDone)
+  const returned = historyData.filter(h => History.isReturned(h))
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type })
   }, [])
 
   const handleReturn = useCallback(
-    async (history: HistoryMetadata) => {
-      const result = await usecase.returnBook(history.historyId, history.isbn, state.location)
+    async (history: HistoryType) => {
+      const result = await usecase.returnBook(String(history.id), history.isbn, state.location)
+
       if (result.err) {
         showToast('返却に失敗しました', 'error')
         return
       }
+
       showToast('返却しました', 'success')
     },
-    [showToast, state.location, usecase]
+    [showToast, state.location, usecase],
   )
 
   return {

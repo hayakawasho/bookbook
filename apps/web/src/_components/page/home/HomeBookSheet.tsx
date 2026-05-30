@@ -1,13 +1,13 @@
-import type { BookMetadata } from '../../../_book/model'
+import { Book } from '../../../_models/book'
 import type { ExternalBookInfo } from '../../../_repositories/books/interface'
 import { BookCover } from '../../usecase/book/BookCover'
 import { BookItem, BookStockSummaryLines } from '../../usecase/book/BookItem'
 import { IconPlus } from '../../ui/icon'
 
 type HomeExistingBookSheetProps = {
-  book: BookMetadata
-  onAddCopy: (book: BookMetadata) => void
-  onCheckout: (book: BookMetadata) => void
+  book: Book
+  onAddCopy: (book: Book) => void
+  onCheckout: (book: Book) => void
 }
 
 type HomeExternalBookSheetProps = {
@@ -20,8 +20,11 @@ export function HomeExistingBookSheet({
   onAddCopy,
   onCheckout,
 }: HomeExistingBookSheetProps) {
-  const canBorrow = book.availableCount > 0
+  const canBorrow = Book.isBorrowable(book)
   const attributionLabel = book.publisher ?? book.author
+  const checkoutButtonClass = canBorrow
+    ? 'bg-primary text-primary-contrast'
+    : 'bg-middle text-primary-contrast/80 cursor-not-allowed'
 
   return (
     <>
@@ -45,7 +48,7 @@ export function HomeExistingBookSheet({
       <div className="px-[22px] pb-8 pt-5 absolute bottom-0 w-full">
         <button
           type="button"
-          className={`w-full min-h-[56px] px-5 border-0 text-sm font-semibold cursor-pointer ${canBorrow ? 'bg-primary text-primary-contrast' : 'bg-middle text-primary-contrast/80 cursor-not-allowed'}`}
+          className={`w-full min-h-[56px] px-5 border-0 text-sm font-semibold cursor-pointer ${checkoutButtonClass}`}
           disabled={!canBorrow}
           onClick={() => onCheckout(book)}
         >
@@ -63,7 +66,7 @@ export function HomeExternalBookSheet({
   return (
     <>
       <div className="flex gap-[29px] items-start px-[22px] pt-0 pb-2">
-        <BookItem book={{ ...book, availableCount: 0, total: 0 }} />
+        <BookItem book={book} />
       </div>
       <div className="px-[22px] pb-8 pt-5 absolute bottom-0 w-full">
         <button

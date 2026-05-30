@@ -1,12 +1,13 @@
-import type { HistoryMetadata } from '../../../_book/model'
+import type { ReactNode } from 'react'
+import type { History } from '../../../_models/history'
 import { BookItem } from '../../usecase/book/BookItem'
 import type { HistorySubTab } from './types'
 
 type HistoryListProps = {
-  borrowing: HistoryMetadata[]
-  returned: HistoryMetadata[]
+  borrowing: History[]
+  returned: History[]
   activeTab: HistorySubTab
-  onReturn: (history: HistoryMetadata) => void
+  onReturn: (history: History) => void
 }
 
 function formatLoanDate(date: Date) {
@@ -14,6 +15,26 @@ function formatLoanDate(date: Date) {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}.${m}.${d}`
+}
+
+function LoanDateMeta({ date }: { date: Date }) {
+  return (
+    <p className="m-0 mb-1 text-xs leading-[17px]">
+      貸出日：{formatLoanDate(date)}
+    </p>
+  )
+}
+
+function HistoryRow({ history, action }: { history: History; action?: ReactNode }) {
+  return (
+    <li className="border-b border-border first:border-t first:border-border">
+      <BookItem
+        book={history}
+        prependMeta={<LoanDateMeta date={history.checkoutDate} />}
+        action={action}
+      />
+    </li>
+  )
 }
 
 function BorrowingEmptyState() {
@@ -45,26 +66,20 @@ function BorrowingList({
 
   return (
     <ul className="list-none m-0 p-0">
-      {borrowing.map(h => (
-        <li key={h.historyId} className="border-b border-border first:border-t first:border-border">
-          <BookItem
-            book={h}
-            prependMeta={
-              <p className="m-0 mb-1 text-xs leading-[17px]">
-                貸出日：{formatLoanDate(h.checkoutDate)}
-              </p>
-            }
-            action={
-              <button
-                type="button"
-                className="w-full min-h-[36px] px-4 bg-primary text-primary-contrast border-0 text-xs font-semibold cursor-pointer"
-                onClick={() => onReturn(h)}
-              >
-                返却
-              </button>
-            }
-          />
-        </li>
+      {borrowing.map(history => (
+        <HistoryRow
+          key={String(history.id)}
+          history={history}
+          action={
+            <button
+              type="button"
+              className="w-full min-h-[36px] px-4 bg-primary text-primary-contrast border-0 text-xs font-semibold cursor-pointer"
+              onClick={() => onReturn(history)}
+            >
+              返却
+            </button>
+          }
+        />
       ))}
     </ul>
   )
@@ -77,17 +92,8 @@ function ReturnedList({ returned }: Pick<HistoryListProps, 'returned'>) {
 
   return (
     <ul className="list-none m-0 p-0">
-      {returned.map(h => (
-        <li key={h.historyId} className="border-b border-border first:border-t first:border-border">
-          <BookItem
-            book={h}
-            prependMeta={
-              <p className="m-0 mb-1 text-xs leading-[17px]">
-                貸出日：{formatLoanDate(h.checkoutDate)}
-              </p>
-            }
-          />
-        </li>
+      {returned.map(history => (
+        <HistoryRow key={String(history.id)} history={history} />
       ))}
     </ul>
   )

@@ -15,7 +15,7 @@ export function HomeScreen() {
     dialogConfig,
     fileInputRef,
     handleAddBook,
-    handleIncrementBook,
+    handleRestockBook,
     handleChangeIsbnInput,
     handleCheckout,
     handleManualSearch,
@@ -68,7 +68,7 @@ export function HomeScreen() {
         {sheetMode?.kind === 'existing' && (
           <HomeExistingBookSheet
             book={sheetMode.book}
-            onAddCopy={handleIncrementBook}
+            onAddCopy={handleRestockBook}
             onCheckout={handleCheckout}
           />
         )}
