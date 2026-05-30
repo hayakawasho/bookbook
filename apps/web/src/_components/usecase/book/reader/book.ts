@@ -1,5 +1,5 @@
 import useSWR from 'swr'
-import { useAppContext } from '../../../_states/AppContext'
+import { useAppContext } from '../../../../_states/AppContext'
 import { bookCacheKeyGenerator } from '../cache'
 
 export function useBookItem(isbn: string | null) {

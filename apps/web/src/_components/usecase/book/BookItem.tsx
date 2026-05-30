@@ -1,16 +1,17 @@
 import type { ReactNode } from 'react'
-import type { BookMetadata } from '../../../_book/model'
+import { Book } from '../../../_models/book'
 import { BookCover } from './BookCover'
 
+export type BookView = Pick<Book, 'title' | 'author' | 'publisher' | 'cover'>
+
 type BookItemProps = {
-  book: BookMetadata
-  /** タイトルより上に置くメタ情報（貸出日など） */
+  book: BookView
   prependMeta?: ReactNode
   action?: ReactNode
 }
 
-export function BookStockSummaryLines({ book }: { book: BookMetadata }) {
-  const isBorrowable = book.availableCount > 0;
+export function BookStockSummaryLines({ book }: { book: Book }) {
+  const isBorrowable = Book.isBorrowable(book)
 
   return (
     <div className="flex flex-col gap-1">
