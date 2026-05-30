@@ -1,5 +1,5 @@
-import { defineEntity } from '../defineEntity'
-import type { EntityWithId } from '../types'
+import { defineEntity, type EntityWithId } from '@bookbook/utils'
+
 import { toHistoryId } from './ids'
 
 type HistoryPayload = {

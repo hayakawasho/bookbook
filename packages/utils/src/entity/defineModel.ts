@@ -12,18 +12,19 @@
  * ```
  */
 
-import type { StrictShape } from "./types";
+import type { StrictShape } from './types'
 
 type ModelApi<T extends object> = {
-  create<V extends T>(input: StrictShape<T, V>): V;
-};
+  create<V extends T>(input: StrictShape<T, V>): V
+}
 
 export function defineModel<T extends object>(): ModelApi<T> {
   return {
     create: <V extends T>(input: StrictShape<T, V>): V => ({ ...input }) as V,
-  };
+  }
 }
 
 /** `defineModel` / `defineEntity` など、`create` を持つファクトリの戻り値の型。 */
-export type UnwrapModel<M extends { create: (...args: never[]) => unknown }> =
-  ReturnType<M["create"]>;
+export type UnwrapModel<M extends { create: (...args: never[]) => unknown }> = ReturnType<
+  M['create']
+>

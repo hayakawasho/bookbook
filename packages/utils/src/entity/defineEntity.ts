@@ -18,24 +18,24 @@
  * ```
  */
 
-import type { BrandId } from "./defineIdBrand";
-import type { EntityWithId, StrictShape } from "./types";
+import type { BrandId } from './defineIdBrand'
+import type { EntityWithId, StrictShape } from './types'
 
 /** `create` の入力。`T` に `id` を含めないこと */
 type EntityPayload<T extends object, K extends string> = T & {
-  id?: BrandId<K>;
-};
+  id?: BrandId<K>
+}
 
 /** `create` の戻り（入力 `V` + `id`） */
 type CreatedEntity<K extends string, V> = V & {
-  id: BrandId<K>;
-};
+  id: BrandId<K>
+}
 
 type EntityApi<T extends object, K extends string> = {
   create<V extends EntityPayload<T, K>>(
     input: StrictShape<EntityPayload<T, K>, V>,
-  ): CreatedEntity<K, V>;
-};
+  ): CreatedEntity<K, V>
+}
 
 /**
  * `K` は `toId` から推論し、`T` は第2段 `defineEntity(toId)<T>()` で明示する。
@@ -45,18 +45,16 @@ export function defineEntity<const K extends string>(
   generateRawId: () => string = () => crypto.randomUUID(),
 ): <T extends object>() => EntityApi<T, K> {
   return <T extends object>() => ({
-    create: <V extends EntityPayload<T, K>>(
-      input: StrictShape<EntityPayload<T, K>, V>,
-    ) => {
-      const plain = { ...input } as V;
-      const id = plain.id !== undefined ? plain.id : toId(generateRawId());
+    create: <V extends EntityPayload<T, K>>(input: StrictShape<EntityPayload<T, K>, V>) => {
+      const plain = { ...input } as V
+      const id = plain.id !== undefined ? plain.id : toId(generateRawId())
 
       return {
         ...plain,
         id,
-      } as CreatedEntity<K, V>;
+      } as CreatedEntity<K, V>
     },
-  });
+  })
 }
 
-export type { EntityApi, EntityWithId };
+export type { EntityApi, EntityWithId }

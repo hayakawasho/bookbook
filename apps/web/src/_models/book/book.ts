@@ -1,5 +1,5 @@
-import { defineEntity } from '../defineEntity'
-import type { EntityWithId } from '../types'
+import { defineEntity, type EntityWithId } from '@bookbook/utils'
+
 import { toBookId } from './ids'
 
 type BookPayload = {
@@ -38,12 +38,15 @@ function returnStock(stock: StockFields): StockFields {
 }
 
 function addStockCopy(stock: StockFields): StockFields {
-  return { total: stock.total + 1, availableCount: stock.availableCount + 1 }
+  return {
+    total: stock.total + 1,
+    availableCount: stock.availableCount + 1,
+  }
 }
 
 export const Book = {
   create: factory.create,
-  isBorrowable: (b: Book): boolean => {
+  hasAvailableStock: (b: Book): boolean => {
     return b.availableCount > 0
   },
   checkout: (b: Book): Book => {
