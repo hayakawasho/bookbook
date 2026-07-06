@@ -136,8 +136,10 @@ export async function verifySession(secret: string, token: string): Promise<Sess
   } catch {
     return null
   }
-  if (payload.v !== 1 || typeof payload.email !== 'string' || typeof payload.exp !== 'number')
+  if (payload.v !== 1 || typeof payload.email !== 'string' || typeof payload.exp !== 'number') {
     return null
+  }
+
   if (payload.exp < Math.floor(Date.now() / 1000)) {
     return null
   }
