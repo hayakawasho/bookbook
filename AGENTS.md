@@ -31,6 +31,13 @@ npm run test       # Vitest（web の後に api）
 
 ローカルで HTTP API を使うときは **`dev:api` と `dev` を併用**する（Vite が `/api` を Wrangler にプロキシ）。
 
+初回はローカル D1 にマイグレーションを適用する（データは wrangler のローカル SQLite に保存される）:
+
+```sh
+npx wrangler d1 migrations apply bookbook-db --local   # apps/api で実行
+npx wrangler d1 execute bookbook-db --local --command "INSERT INTO books (isbn, location, title) VALUES ('9784873115658', 'daikanyama', 'サンプル本')"  # 任意: 動作確認用データ
+```
+
 ## アーキテクチャ
 
 **正のドキュメントは [docs/architecture/](/docs/architecture/index.md)**。ファイルの配置・移動時は必ず [frontend-structure.md](/docs/architecture/frontend-structure.md) の Decision Flow に従う。

@@ -43,6 +43,14 @@ npm run dev:api   # @bookbook/api（wrangler dev）
 npm run dev       # @bookbook/web（Vite）
 ```
 
+初回は `apps/api` でローカル D1 のマイグレーションを適用する:
+
+```sh
+npx wrangler d1 migrations apply bookbook-db --local
+```
+
+スキーマ変更時は `apps/api/migrations/` に連番 SQL を追加し、同コマンドで適用する（リモートは `--remote`）。
+
 デザイン・トーンのルールはリポジトリ直下の [DESIGN.md](../../DESIGN.md) に従う。
 
 フロントエンドのディレクトリ境界と依存ルールは [frontend-structure.md](./frontend-structure.md) を参照する。
