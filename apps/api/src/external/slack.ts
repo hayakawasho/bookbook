@@ -21,10 +21,12 @@ function buildSlackText(
   book: SlackBookInfo,
   sessionUser?: SessionUser,
 ): string {
-  let text = `[${location}] 📚 ${ACTION_LABEL[type] ?? type}: ${book.title}${book.author ? ` / ${book.author}` : ''}`
+  let text = `[${location}] 📚 ${ACTION_LABEL[type]}: ${book.title}${book.author ? ` / ${book.author}` : ''}`
+
   if (type === 'checkout' && sessionUser) {
     text += ` · ${checkoutBorrowerSlackLabel(sessionUser)}`
   }
+
   return text
 }
 
@@ -36,7 +38,9 @@ export async function sendSlackNotification(
   book: SlackBookInfo,
   sessionUser?: SessionUser,
 ): Promise<void> {
-  if (!webhookUrl) return
+  if (!webhookUrl) {
+    return
+  }
 
   try {
     const text = buildSlackText(type, location, book, sessionUser)

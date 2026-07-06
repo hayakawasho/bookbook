@@ -26,8 +26,13 @@ export const historyRoutes = new Hono<{
 historyRoutes.get('/', async (c) => {
   const sessionUser = c.get('sessionUser')
   const { location, isDone } = c.req.query()
-  if (!location) return c.json({ error: 'location is required' }, 400)
-  if (!isLocation(location)) return c.json({ error: 'unknown location' }, 400)
+  if (!location) {
+    return c.json({ error: 'location is required' }, 400)
+  }
+
+  if (!isLocation(location)) {
+    return c.json({ error: 'unknown location' }, 400)
+  }
 
   const rows = await findHistories(c.env.DB, sessionUser.email, location, isDone)
   return c.json(rows.map(({ history, book }) => historyFromRow(history, book)))
@@ -38,7 +43,9 @@ historyRoutes.post('/', async (c) => {
   const { isbn, location } = await c.req.json<{ isbn: string; location: string }>()
   const sessionUser = c.get('sessionUser')
 
-  if (!isLocation(location)) return c.json({ error: 'unknown location' }, 400)
+  if (!isLocation(location)) {
+    return c.json({ error: 'unknown location' }, 400)
+  }
 
   const result = await checkoutBook(
     c.env.DB,
@@ -48,11 +55,18 @@ historyRoutes.post('/', async (c) => {
     sessionUser.name ?? '',
   )
 
-  if (result.status === 'not-found') return c.json({ error: 'book not found' }, 404)
-  if (result.status === 'no-stock') return c.json({ error: 'no stock available' }, 409)
+  if (result.status === 'not-found') {
+    return c.json({ error: 'book not found' }, 404)
+  }
+
+  if (result.status === 'no-stock') {
+    return c.json({ error: 'no stock available' }, 409)
+  }
 
   const record = await findHistoryWithBookById(c.env.DB, String(result.historyId))
-  if (!record) return c.json({ error: 'history not found after checkout' }, 502)
+  if (!record) {
+    return c.json({ error: 'history not found after checkout' }, 502)
+  }
 
   const json = historyFromRow(record.history, record.book)
 
@@ -73,7 +87,9 @@ historyRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id')
 
   const record = await findHistoryWithBookById(c.env.DB, id)
-  if (!record) return c.json({ error: 'history not found' }, 404)
+  if (!record) {
+    return c.json({ error: 'history not found' }, 404)
+  }
 
   const recordEmail = record.history.borrower_email.trim().toLowerCase()
   const sessionEmail = sessionUser.email.trim().toLowerCase()
@@ -82,7 +98,9 @@ historyRoutes.patch('/:id', async (c) => {
   }
 
   const result = await returnBook(c.env.DB, id)
-  if (result === 'already-returned') return c.json({ error: 'already returned' }, 409)
+  if (result === 'already-returned') {
+    return c.json({ error: 'already returned' }, 409)
+  }
 
   await sendSlackNotification(c.env.SLACK_WEBHOOK_URL, 'return', record.history.location, {
     title: record.book?.title ?? '',

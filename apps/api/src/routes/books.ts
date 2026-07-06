@@ -32,8 +32,13 @@ export const booksRoutes = new Hono<{
 // GET /api/books?q=&location=
 booksRoutes.get('/', async (c) => {
   const { q = '', location } = c.req.query()
-  if (!location) return c.json({ error: 'location is required' }, 400)
-  if (!isLocation(location)) return c.json({ error: 'unknown location' }, 400)
+  if (!location) {
+    return c.json({ error: 'location is required' }, 400)
+  }
+
+  if (!isLocation(location)) {
+    return c.json({ error: 'unknown location' }, 400)
+  }
 
   const rows = await findBooks(c.env.DB, location, q)
   return c.json(rows.map(bookFromRow))
@@ -43,8 +48,13 @@ booksRoutes.get('/', async (c) => {
 booksRoutes.get('/:isbn', async (c) => {
   const isbn = c.req.param('isbn')
   const { location } = c.req.query()
-  if (!location) return c.json({ error: 'location is required' }, 400)
-  if (!isLocation(location)) return c.json({ error: 'unknown location' }, 400)
+  if (!location) {
+    return c.json({ error: 'location is required' }, 400)
+  }
+
+  if (!isLocation(location)) {
+    return c.json({ error: 'unknown location' }, 400)
+  }
 
   const row = await findBookByIsbn(c.env.DB, isbn, location)
   if (row) {
@@ -105,10 +115,14 @@ booksRoutes.patch('/:isbn/count', async (c) => {
     location: string
   }>()
 
-  if (!isLocation(location)) return c.json({ error: 'unknown location' }, 400)
+  if (!isLocation(location)) {
+    return c.json({ error: 'unknown location' }, 400)
+  }
 
   const book = await findBookByIsbn(c.env.DB, isbn, location)
-  if (!book) return c.json({ error: 'book not found' }, 404)
+  if (!book) {
+    return c.json({ error: 'book not found' }, 404)
+  }
 
   const validation = validateStockTransition(
     { available_count: book.available_count, total: book.total },
@@ -128,7 +142,9 @@ booksRoutes.patch('/:isbn/count', async (c) => {
     { availableCount, total },
   )
 
-  if (!updated) return c.json({ error: 'conflict' }, 409)
+  if (!updated) {
+    return c.json({ error: 'conflict' }, 409)
+  }
 
   return c.json({ ok: true })
 })
@@ -137,14 +153,23 @@ booksRoutes.patch('/:isbn/count', async (c) => {
 booksRoutes.patch('/:isbn/metadata', async (c) => {
   const isbn = c.req.param('isbn')
   const { location } = await c.req.json<{ location: string }>()
-  if (!location) return c.json({ error: 'location is required' }, 400)
-  if (!isLocation(location)) return c.json({ error: 'unknown location' }, 400)
+  if (!location) {
+    return c.json({ error: 'location is required' }, 400)
+  }
+
+  if (!isLocation(location)) {
+    return c.json({ error: 'unknown location' }, 400)
+  }
 
   const existing = await findBookByIsbn(c.env.DB, isbn, location)
-  if (!existing) return c.json({ error: 'book not found' }, 404)
+  if (!existing) {
+    return c.json({ error: 'book not found' }, 404)
+  }
 
   const external = await fetchExternalBookMetadata(isbn)
-  if (!external?.title) return c.json({ error: 'external metadata not found' }, 404)
+  if (!external?.title) {
+    return c.json({ error: 'external metadata not found' }, 404)
+  }
 
   const coverPatch = await resolveMetadataCoverSrc(external, existing.cover_src ?? undefined, isbn)
   const patch = metadataPatchFromExternal(external, coverPatch)
@@ -152,7 +177,9 @@ booksRoutes.patch('/:isbn/metadata', async (c) => {
   await updateBookMetadata(c.env.DB, isbn, location, patch)
 
   const updated = await findBookByIsbn(c.env.DB, isbn, location)
-  if (!updated) return c.json({ error: 'book not found after update' }, 502)
+  if (!updated) {
+    return c.json({ error: 'book not found after update' }, 502)
+  }
 
   return c.json({ book: bookFromRow(updated) })
 })

@@ -21,7 +21,10 @@ type SessionPayloadV1 = {
 }
 
 export function parseAllowedDomains(raw: string | undefined): string[] {
-  if (!raw?.trim()) return []
+  if (!raw?.trim()) {
+    return []
+  }
+
   return raw
     .split(',')
     .map((d) => d.trim().toLowerCase())
@@ -35,13 +38,28 @@ export function isAllowedWorkspaceUser(
   hd: string | undefined,
   allowedDomains: string[],
 ): boolean {
-  if (allowedDomains.length === 0) return false
-  if (emailVerified === false) return false
+  if (allowedDomains.length === 0) {
+    return false
+  }
+
+  if (emailVerified === false) {
+    return false
+  }
+
   const at = email.lastIndexOf('@')
-  if (at <= 0) return false
+  if (at <= 0) {
+    return false
+  }
+
   const domain = email.slice(at + 1).toLowerCase()
-  if (allowedDomains.includes(domain)) return true
-  if (hd && allowedDomains.includes(hd.toLowerCase())) return true
+  if (allowedDomains.includes(domain)) {
+    return true
+  }
+
+  if (hd && allowedDomains.includes(hd.toLowerCase())) {
+    return true
+  }
+
   return false
 }
 
@@ -100,7 +118,10 @@ export async function signSession(
 
 export async function verifySession(secret: string, token: string): Promise<SessionUser | null> {
   const dot = token.lastIndexOf('.')
-  if (dot <= 0) return null
+  if (dot <= 0) {
+    return null
+  }
+
   const payloadB64 = token.slice(0, dot)
   const sigB64 = token.slice(dot + 1)
   let payloadStr: string
@@ -117,7 +138,9 @@ export async function verifySession(secret: string, token: string): Promise<Sess
   }
   if (payload.v !== 1 || typeof payload.email !== 'string' || typeof payload.exp !== 'number')
     return null
-  if (payload.exp < Math.floor(Date.now() / 1000)) return null
+  if (payload.exp < Math.floor(Date.now() / 1000)) {
+    return null
+  }
 
   let sig: Uint8Array
   try {
@@ -132,7 +155,9 @@ export async function verifySession(secret: string, token: string): Promise<Sess
     sig as BufferSource,
     utf8(payloadStr) as BufferSource,
   )
-  if (!ok) return null
+  if (!ok) {
+    return null
+  }
 
   return { email: payload.email, name: payload.name, hd: payload.hd }
 }

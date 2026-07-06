@@ -27,12 +27,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!USE_HTTP_API) {
       return
     }
+
     let cancelled = false
     ;(async () => {
       setAuthLoading(true)
       try {
         const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' })
-        if (cancelled) return
+        if (cancelled) {
+          return
+        }
+
         if (res.ok) {
           const data = (await res.json()) as {
             user: { email: string; name: string | null }
@@ -60,7 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
-    if (!USE_HTTP_API) return
+    if (!USE_HTTP_API) {
+      return
+    }
+
     try {
       await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' })
     } catch {
@@ -81,5 +88,6 @@ export function useAuth(): AuthContextValue {
   if (!ctx) {
     throw new Error('useAuth must be used within AuthProvider')
   }
+
   return ctx
 }

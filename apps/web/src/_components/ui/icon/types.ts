@@ -7,7 +7,10 @@ export type IconProps = Omit<SVGAttributes<SVGSVGElement>, 'width' | 'height'> &
 }
 
 export function iconSizePx(size?: number | string): number {
-  if (typeof size === 'number' && Number.isFinite(size)) return size
+  if (typeof size === 'number' && Number.isFinite(size)) {
+    return size
+  }
+
   if (typeof size === 'string') {
     const n = parseFloat(size.replace('px', ''))
     return Number.isFinite(n) ? n : 24

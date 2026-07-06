@@ -109,7 +109,8 @@ export async function findBooks(db: D1Database, location: string, q: string): Pr
     const pattern = `%${escapeLikePattern(q)}%`
     const { results } = await db
       .prepare(
-        `SELECT * FROM books WHERE location = ?1 AND (title LIKE ?2 ESCAPE '\\' OR author LIKE ?2 ESCAPE '\\') LIMIT 100`,
+        `SELECT * FROM books WHERE location = ?1 AND (title LIKE ?2 ESCAPE '\\' OR author LIKE ?2 ESCAPE '\\')
+         ORDER BY created_at DESC, id DESC LIMIT 100`,
       )
       .bind(location, pattern)
       .all<BookRow>()
@@ -117,7 +118,7 @@ export async function findBooks(db: D1Database, location: string, q: string): Pr
   }
 
   const { results } = await db
-    .prepare(`SELECT * FROM books WHERE location = ?1 LIMIT 100`)
+    .prepare(`SELECT * FROM books WHERE location = ?1 ORDER BY created_at DESC, id DESC LIMIT 100`)
     .bind(location)
     .all<BookRow>()
   return results
@@ -196,13 +197,29 @@ export async function updateBookMetadata(
     cover_src?: string | null
   },
 ): Promise<void> {
+  // 型に加えて実行時にも列名を固定し、SQL への列名混入を防ぐ
+  const PATCHABLE_COLUMNS = [
+    'title',
+    'author',
+    'publisher',
+    'description',
+    'published_date',
+    'cover_src',
+  ] as const
+
   const fields: string[] = []
   const values: unknown[] = []
-  for (const [key, value] of Object.entries(patch)) {
+  for (const key of PATCHABLE_COLUMNS) {
+    if (!(key in patch)) {
+      continue
+    }
+
     fields.push(`${key} = ?${fields.length + 1}`)
-    values.push(value)
+    values.push(patch[key])
   }
-  if (fields.length === 0) return
+  if (fields.length === 0) {
+    return
+  }
 
   fields.push(`updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`)
 
@@ -237,6 +254,7 @@ export async function findHistories(
        FROM histories h
        LEFT JOIN books b ON b.id = h.book_id
        WHERE ${conditions.join(' AND ')}
+       ORDER BY h.checkout_date DESC, h.id DESC
        LIMIT 100`,
     )
     .bind(...params)
@@ -301,7 +319,10 @@ export async function findHistoryWithBookById(
     )
     .bind(Number(id))
     .first<Record<string, unknown>>()
-  if (!row) return null
+  if (!row) {
+    return null
+  }
+
   return splitHistoryBookRow(row)
 }
 
@@ -337,7 +358,10 @@ export async function checkoutBook(
   }
 
   const book = await findBookByIsbn(db, isbn, location)
-  if (!book) return { status: 'not-found' }
+  if (!book) {
+    return { status: 'not-found' }
+  }
+
   return { status: 'no-stock' }
 }
 
@@ -358,6 +382,9 @@ export async function returnBook(db: D1Database, historyId: string): Promise<Ret
       .bind(Number(historyId)),
   ])
 
-  if ((updateHistoryRes.meta.changes ?? 0) === 0) return 'already-returned'
+  if ((updateHistoryRes.meta.changes ?? 0) === 0) {
+    return 'already-returned'
+  }
+
   return 'ok'
 }

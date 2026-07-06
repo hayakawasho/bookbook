@@ -14,8 +14,14 @@ export type ExternalBookPayload = {
 const ndlXmlParser = new XMLParser({ ignoreDeclaration: true })
 
 function isEmpty(value: unknown): boolean {
-  if (value === undefined || value === null) return true
-  if (typeof value === 'string' && value.trim() === '') return true
+  if (value === undefined || value === null) {
+    return true
+  }
+
+  if (typeof value === 'string' && value.trim() === '') {
+    return true
+  }
+
   if (typeof value === 'object' && value !== null) {
     const o = value as Record<string, unknown>
     if ('src' in o) {
@@ -40,7 +46,10 @@ function openLibraryCoverUri(isbn: string): string {
 /** Google Books 等の http サムネイルを HTTPS ページから読めるよう正規化する */
 function normalizeCoverSrc(src: string | undefined): string | undefined {
   const trimmed = src?.trim()
-  if (!trimmed) return undefined
+  if (!trimmed) {
+    return undefined
+  }
+
   return trimmed.replace(/^http:\/\//i, 'https://')
 }
 
@@ -48,12 +57,16 @@ function normalizeCoverSrc(src: string | undefined): string | undefined {
 async function isUsableCoverUrl(src: string): Promise<boolean> {
   try {
     const res = await fetch(src, { method: 'GET', redirect: 'follow' })
-    if (!res.ok) return false
+    if (!res.ok) {
+      return false
+    }
 
     const lengthHeader = res.headers.get('content-length')
     if (lengthHeader) {
       const length = Number(lengthHeader)
-      if (Number.isFinite(length) && length < MIN_USABLE_COVER_BYTES) return false
+      if (Number.isFinite(length) && length < MIN_USABLE_COVER_BYTES) {
+        return false
+      }
     }
 
     const buf = await res.arrayBuffer()
@@ -77,9 +90,17 @@ export async function firstUsableCoverSrc(
 ): Promise<string | undefined> {
   for (const raw of candidates) {
     const src = normalizeCoverSrc(raw)
-    if (!src) continue
-    if (isTrustedOpenBdCoverSrc(src)) return src
-    if (await isUsableCoverUrl(src)) return src
+    if (!src) {
+      continue
+    }
+
+    if (isTrustedOpenBdCoverSrc(src)) {
+      return src
+    }
+
+    if (await isUsableCoverUrl(src)) {
+      return src
+    }
   }
   return undefined
 }
@@ -143,7 +164,9 @@ export async function resolveMetadataCoverSrc(
     canonicalOpenBdCoverUri(isbn),
     existingSrc,
   )
-  if (resolved) return { src: resolved }
+  if (resolved) {
+    return { src: resolved }
+  }
 
   // 1x1 化しやすい Open Library だけ、有効な代替が無いとき削除する
   if (existingSrc?.includes('covers.openlibrary.org') && !(await isUsableCoverUrl(existingSrc))) {
@@ -154,15 +177,25 @@ export async function resolveMetadataCoverSrc(
 }
 
 function parseFlexibleDate(raw: unknown): string | undefined {
-  if (raw === undefined || raw === null) return undefined
+  if (raw === undefined || raw === null) {
+    return undefined
+  }
+
   const s = String(raw).trim()
-  if (!s) return undefined
+  if (!s) {
+    return undefined
+  }
+
   // OpenBD の pubdate は "YYYYMM" 6桁形式。new Date("202509") は year 202509 として解釈されるため先に正規化する
   if (/^\d{6}$/.test(s)) {
     return new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-01`).toISOString()
   }
+
   const d = new Date(s)
-  if (!Number.isNaN(d.getTime())) return d.toISOString()
+  if (!Number.isNaN(d.getTime())) {
+    return d.toISOString()
+  }
+
   return undefined
 }
 
@@ -216,7 +249,9 @@ function extractOpenBdDescription(onix: NonNullable<OpenBdEntry['onix']>): strin
 function convertGoogleVolume(isbn: string, item: GoogleVolumeItem): ExternalBookPayload | null {
   const vi = item.volumeInfo
   const titleBase = `${vi?.title ?? ''} ${vi?.subtitle ?? ''}`.trim()
-  if (!titleBase) return null
+  if (!titleBase) {
+    return null
+  }
 
   return {
     isbn,
@@ -230,10 +265,15 @@ function convertGoogleVolume(isbn: string, item: GoogleVolumeItem): ExternalBook
 }
 
 function convertOpenBdEntry(isbn: string, raw: OpenBdEntry | null): ExternalBookPayload | null {
-  if (!raw?.onix || !raw.summary) return null
+  if (!raw?.onix || !raw.summary) {
+    return null
+  }
+
   const summary = raw.summary
   const title = summary.title?.trim()
-  if (!title) return null
+  if (!title) {
+    return null
+  }
 
   const description = extractOpenBdDescription(raw.onix)
 
@@ -250,7 +290,10 @@ function convertOpenBdEntry(isbn: string, raw: OpenBdEntry | null): ExternalBook
 
 function formatNdlAuthor(author: string | string[] | undefined): string | undefined {
   const normalize = (a: string) => a.replace(/,/g, '')
-  if (author === undefined) return undefined
+  if (author === undefined) {
+    return undefined
+  }
+
   if (Array.isArray(author)) {
     const parts = author.map((a) => normalize(String(a))).filter(Boolean)
     return parts.length > 0 ? parts.join(', ') : undefined
@@ -269,14 +312,20 @@ function convertNdlOpenSearch(isbn: string, xml: string): ExternalBookPayload | 
 
   const rss = (parsed as { rss?: { channel?: { item?: unknown } } }).rss
   const item = rss?.channel?.item
-  if (item === undefined || item === null) return null
+  if (item === undefined || item === null) {
+    return null
+  }
 
   const first = Array.isArray(item) ? item[0] : item
-  if (!first || typeof first !== 'object') return null
+  if (!first || typeof first !== 'object') {
+    return null
+  }
 
   const row = first as Record<string, unknown>
   const title = row.title
-  if (typeof title !== 'string' || title.trim() === '') return null
+  if (typeof title !== 'string' || title.trim() === '') {
+    return null
+  }
 
   return {
     isbn,
@@ -294,20 +343,35 @@ function convertNdlOpenSearch(isbn: string, xml: string): ExternalBookPayload | 
 async function fetchGoogleVolume(isbn: string): Promise<ExternalBookPayload | null> {
   const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=1`
   const res = await fetch(url)
-  if (!res.ok) return null
+  if (!res.ok) {
+    return null
+  }
+
   const data = (await res.json()) as GoogleVolumesResponse
-  if (!data.totalItems || data.totalItems <= 0 || !data.items?.[0]) return null
+  if (!data.totalItems || data.totalItems <= 0 || !data.items?.[0]) {
+    return null
+  }
+
   return convertGoogleVolume(isbn, data.items[0])
 }
 
 async function fetchOpenBd(isbn: string): Promise<ExternalBookPayload | null> {
   const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${encodeURIComponent(isbn)}`)
-  if (!res.ok) return null
+  if (!res.ok) {
+    return null
+  }
+
   const data = (await res.json()) as Array<OpenBdEntry | null>
   const first = data[0]
-  if (!first) return null
+  if (!first) {
+    return null
+  }
+
   const converted = convertOpenBdEntry(isbn, first)
-  if (!converted) return null
+  if (!converted) {
+    return null
+  }
+
   return converted
 }
 
@@ -316,7 +380,10 @@ async function mergeGoogleAndOpenBd(
   openBd: ExternalBookPayload | null,
   google: ExternalBookPayload | null,
 ): Promise<ExternalBookPayload | null> {
-  if (!openBd && !google) return null
+  if (!openBd && !google) {
+    return null
+  }
+
   if (!openBd && google) {
     const cover = await buildCoverSrc(isbn, { googleSrc: google.cover?.src })
     return { ...google, isbn, cover }
@@ -334,7 +401,9 @@ async function mergeGoogleAndOpenBd(
   ) as Partial<ExternalBookPayload>
 
   const title = `${g.title ?? o.title ?? ''}`.trim()
-  if (!title) return null
+  if (!title) {
+    return null
+  }
 
   const cover = await buildCoverSrc(isbn, {
     openBdSrc: openBd?.cover?.src,
@@ -353,15 +422,22 @@ async function mergeGoogleAndOpenBd(
 export async function fetchExternalBookMetadata(isbn: string): Promise<ExternalBookPayload | null> {
   const [google, openBd] = await Promise.all([fetchGoogleVolume(isbn), fetchOpenBd(isbn)])
   const primary = await mergeGoogleAndOpenBd(isbn, openBd, google)
-  if (primary?.title) return primary
+  if (primary?.title) {
+    return primary
+  }
 
   const ndlRes = await fetch(
     `https://iss.ndl.go.jp/api/opensearch?isbn=${encodeURIComponent(isbn)}&cnt=1`,
   )
-  if (!ndlRes.ok) return null
+  if (!ndlRes.ok) {
+    return null
+  }
+
   const xml = await ndlRes.text()
   const ndl = convertNdlOpenSearch(isbn, xml)
-  if (!ndl?.title) return null
+  if (!ndl?.title) {
+    return null
+  }
 
   const thumbUri = `https://iss.ndl.go.jp/thumbnail/${encodeURIComponent(isbn)}`
   const thumbOk = await fetch(thumbUri).then((r) => r.ok)
