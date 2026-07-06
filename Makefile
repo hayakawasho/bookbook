@@ -1,6 +1,6 @@
 NPM := npm
 
-.PHONY: install dev dev-web dev-api build deploy-api preview storybook build-storybook test lint lint-fix clean db-migrate db-migrate-remote
+.PHONY: install dev dev-web dev-api build deploy-api deploy-api-prod preview storybook build-storybook test lint lint-fix clean db-migrate db-migrate-remote db-migrate-prod
 
 install:
 	$(NPM) install
@@ -45,6 +45,12 @@ db-migrate:
 
 db-migrate-remote:
 	cd apps/api && $(NPM) exec wrangler d1 migrations apply bookbook-db --remote
+
+deploy-api-prod:
+	cd apps/api && $(NPM) exec wrangler deploy -- --env production
+
+db-migrate-prod:
+	cd apps/api && $(NPM) exec wrangler d1 migrations apply bookbook-db -- --remote --env production
 
 clean:
 	rm -rf node_modules apps/web/node_modules apps/api/node_modules \

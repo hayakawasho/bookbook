@@ -16,6 +16,7 @@
   // vars で公開してよいものだけ vars に、シークレットは wrangler secret put で登録。
   //   AUTH_SUCCESS_REDIRECT（任意） - ログイン後のパス（既定 `/`）。vars でよい
   "vars": {},
+  // トップレベル = テスト環境（個人アカウント）。本番は env.production（別アカウント）に分ける
   "d1_databases": [
     {
       "binding": "DB",
@@ -23,5 +24,22 @@
       "database_id": "7cc2bd14-e1be-4e10-8ace-c837ad3789c5",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "env": {
+    "production": {
+      // 本番アカウントで `wrangler d1 create bookbook-db` 後に account_id / database_id を設定する
+      // デプロイ: 本番アカウントに `wrangler login` し直すか CLOUDFLARE_API_TOKEN を使い `wrangler deploy --env production`
+      // シークレットは env ごとに登録が必要: `wrangler secret put <KEY> --env production`
+      "name": "bookbook-worker",
+      "vars": {},
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "bookbook-db",
+          "database_id": "TBD-prod-database-id",
+          "migrations_dir": "migrations"
+        }
+      ]
+    }
+  }
 }
