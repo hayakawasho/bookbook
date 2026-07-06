@@ -18,38 +18,6 @@
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Toast (Web): slide + fade from top */
-  --animate-toast-enter: toast-enter 240ms ease-out forwards;
-  --animate-toast-exit: toast-exit 220ms ease-in forwards;
-}
-
-@keyframes toast-enter {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -12px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-@keyframes toast-exit {
-  from {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -12px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .toast-motion {
-    animation-duration: 1ms !important;
-    animation-timing-function: linear !important;
-  }
 }
 
 /* Dark mode tokens — Mock state via data-theme only (§2, Phase 1) */

@@ -8,6 +8,7 @@ import {
 } from 'react'
 
 import { normalizeIsbnBarcode } from '../../../../_foundation/utils'
+import { createContinuousDetectionGate } from '../barcode/continuousDetectionGate'
 import { createBarcodeScanner } from '../barcode/createBarcodeScanner'
 import { HOME_BARCODE_CAMERA_ELEMENT_ID } from '../constants'
 
@@ -33,6 +34,7 @@ export function useHomeBarcodeScan({
   onResetSheet,
 }: UseHomeBarcodeScanOptions) {
   const barcodeScannerRef = useRef(createBarcodeScanner())
+  const detectionGateRef = useRef(createContinuousDetectionGate(1500))
 
   const [isbnInput, setIsbnInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -95,9 +97,12 @@ export function useHomeBarcodeScan({
     barcodeScannerRef.current.start({
       elementId: HOME_BARCODE_CAMERA_ELEMENT_ID,
       onDetected: (raw) => {
+        // シート表示中も目撃時刻を更新し続ける（閉じた直後に映ったままの同じ本で再発火させない）
+        const isNewSighting = detectionGateRef.current.shouldHandle(raw, Date.now())
+
         const sheetBlocksScanWhileOpen = sheetModeRef.current !== null
 
-        if (sheetBlocksScanWhileOpen) {
+        if (sheetBlocksScanWhileOpen || !isNewSighting) {
           return
         }
 
