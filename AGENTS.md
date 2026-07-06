@@ -18,25 +18,20 @@ BooKBooK — 蔵書・貸出履歴などを扱う Web アプリ（npm workspaces
 
 ## 開発コマンド
 
-ルートから:
+ルートの Makefile に集約している（正は Makefile）:
 
 ```sh
-npm run dev        # Vite（@bookbook/web）
-npm run dev:api    # wrangler dev（@bookbook/api、ローカル /api）
-npm run build      # 本番ビルド（Web）
-npm run deploy:api # API を Wrangler でデプロイ
-npm run preview    # Web のビルド結果プレビュー
-npm run test       # Vitest（web の後に api）
+make dev        # api（wrangler dev）と web（Vite）を同時起動。Vite が /api をプロキシ
+make dev-web    # web のみ
+make dev-api    # api のみ
+make build      # 本番ビルド（Web）
+make deploy-api # API を Wrangler でデプロイ
+make test       # Vitest（utils → web → api）
+make lint       # Biome チェック（make lint-fix で自動修正）
+make db-migrate # ローカル D1 にマイグレーション適用（初回・スキーマ変更時に必須）
 ```
 
-ローカルで HTTP API を使うときは **`dev:api` と `dev` を併用**する（Vite が `/api` を Wrangler にプロキシ）。
-
-初回はローカル D1 にマイグレーションを適用する（データは wrangler のローカル SQLite に保存される）:
-
-```sh
-npx wrangler d1 migrations apply bookbook-db --local   # apps/api で実行
-npx wrangler d1 execute bookbook-db --local --command "INSERT INTO books (isbn, location, title) VALUES ('9784873115658', 'daikanyama', 'サンプル本')"  # 任意: 動作確認用データ
-```
+ローカル D1 の詳細（サンプルデータ投入・リモート適用）は [tech-stack.md](/docs/architecture/tech-stack.md) を参照。
 
 ## アーキテクチャ
 

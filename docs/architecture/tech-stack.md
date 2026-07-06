@@ -36,20 +36,14 @@
 
 ### ローカル開発時の `/api`
 
-Vite の開発サーバーが **`/api` を `wrangler dev`（既定 `http://127.0.0.1:8787`）へプロキシ**する。別ターミナルで API を起動する。
+Vite の開発サーバーが **`/api` を `wrangler dev`（既定 `http://127.0.0.1:8787`）へプロキシ**する。`make dev` で api / web が同時に起動する。
+
+ローカル D1（wrangler のローカル SQLite）は初回とスキーマ変更時に `make db-migrate` でマイグレーションを適用する。スキーマ変更は `apps/api/migrations/` に連番 SQL を追加する（リモートへは `make db-migrate-remote`）。動作確認用データは任意で投入する:
 
 ```sh
-npm run dev:api   # @bookbook/api（wrangler dev）
-npm run dev       # @bookbook/web（Vite）
+cd apps/api && npx wrangler d1 execute bookbook-db --local \
+  --command "INSERT INTO books (isbn, location, title) VALUES ('9784873115658', 'daikanyama', 'サンプル本')"
 ```
-
-初回は `apps/api` でローカル D1 のマイグレーションを適用する:
-
-```sh
-npx wrangler d1 migrations apply bookbook-db --local
-```
-
-スキーマ変更時は `apps/api/migrations/` に連番 SQL を追加し、同コマンドで適用する（リモートは `--remote`）。
 
 デザイン・トーンのルールはリポジトリ直下の [DESIGN.md](../../DESIGN.md) に従う。
 
@@ -79,22 +73,9 @@ npx wrangler d1 migrations apply bookbook-db --local
 
 フロントエンドのテスト方針・統合テストの対象と API モックは [frontend-structure.md](./frontend-structure.md) の「テスト戦略との関係」を参照する。
 
-## 開発コマンド（ルートから）
+## 開発コマンド
 
-ルート `package.json` のショートカット:
-
-```sh
-npm run dev        # @bookbook/web の dev（Vite）
-npm run dev:api    # @bookbook/api の wrangler dev（/api 用）
-npm run build      # @bookbook/web の production build
-npm run deploy:api # @bookbook/api を wrangler deploy
-npm run preview    # @bookbook/web の preview
-npm run storybook  # @bookbook/web の Storybook（開発）
-npm run build-storybook # @bookbook/web の Storybook 静的ビルド（storybook-static）
-npm run test       # @bookbook/web → @bookbook/api の順で vitest run
-```
-
-各 `apps/*` 直下でも同名 script を定義している。
+ルートの Makefile に集約している。一覧は Makefile 本体とルート [`AGENTS.md`](/AGENTS.md) の「開発コマンド」を参照（重複記載しない）。npm workspaces の script（`npm run <cmd> -w @bookbook/<pkg>`）も各パッケージ直下に残っている。
 
 ## 関連ファイル
 
