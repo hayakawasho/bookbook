@@ -8,6 +8,12 @@ export {
   type StrictShape,
   type UnwrapModel,
 } from './entity'
+export {
+  type UseCase,
+  type UseCaseResult,
+  useCaseResultError,
+  useCaseResultOk,
+} from './result'
 
 /** 数値を min〜max に収める */
 export function clamp(value: number, min: number, max: number): number {

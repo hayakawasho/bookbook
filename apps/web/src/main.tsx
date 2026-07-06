@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SWRConfig } from 'swr'
 
-import { App } from './App.tsx'
+import { App } from './_components/app/App.tsx'
 import './index.css'
 import { registerServiceWorker } from './registerServiceWorker'
 

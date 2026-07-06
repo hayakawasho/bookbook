@@ -1,12 +1,7 @@
-import { Book } from '../../_models/book'
-import { toBookId } from '../../_models/book'
+import { Book, toBookId } from '../../_models/book'
+
 import type { Location } from '../../_foundation/const'
-import type {
-  BookCountOperation,
-  BookRepository,
-  ExternalBookInfo,
-  FindByIsbnResult,
-} from './interface'
+import type { BookRepository, ExternalBookInfo, FindByIsbnResult } from '../../_usecases/book/ports'
 
 const INITIAL_BOOKS: Book[] = [
   Book.create({
@@ -96,10 +91,10 @@ function createRegisteredBookFromExternal(book: ExternalBookInfo): Book {
 }
 
 export class MockBookRepository implements BookRepository {
-  private books: Book[] = INITIAL_BOOKS.map(b => ({ ...b }))
+  private books: Book[] = INITIAL_BOOKS.map((b) => ({ ...b }))
 
   findByIsbn(isbn: string, _location: Location): Promise<FindByIsbnResult> {
-    const registered = this.books.find(b => String(b.id) === isbn)
+    const registered = this.books.find((b) => String(b.id) === isbn)
 
     if (registered) {
       return Promise.resolve({ status: 'registered', book: registered })
@@ -119,31 +114,18 @@ export class MockBookRepository implements BookRepository {
       return Promise.resolve([...this.books])
     }
 
-    const filtered = this.books.filter(b => matchesBookSearchQuery(b, query))
+    const filtered = this.books.filter((b) => matchesBookSearchQuery(b, query))
     return Promise.resolve(filtered)
   }
 
-  create(book: ExternalBookInfo, _location: Location): Promise<void> {
+  createItem(book: ExternalBookInfo, _location: Location): Promise<void> {
     this.books.push(createRegisteredBookFromExternal(book))
     return Promise.resolve()
   }
 
-  updateCount(isbn: string, operation: BookCountOperation, _location: Location): Promise<void> {
-    this.books = this.books.map(b => {
-      if (String(b.id) !== isbn) {
-        return b
-      }
-
-      switch (operation) {
-        case 'add-copy':
-          return Book.addStock(b)
-        case 'checkout':
-          return Book.checkout(b)
-        case 'return':
-          return Book.return(b)
-      }
-    })
-
+  updateItem(book: Book, _location: Location): Promise<void> {
+    const isbn = String(book.id)
+    this.books = this.books.map((b) => (String(b.id) === isbn ? book : b))
     return Promise.resolve()
   }
 }

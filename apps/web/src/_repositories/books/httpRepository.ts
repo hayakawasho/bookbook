@@ -1,13 +1,10 @@
 import { Book } from '../../_models/book'
-import type { BookDto, ExternalBookDto } from '../../_models/book'
-import type { Location } from '../../_foundation/const'
-import type {
-  BookCountOperation,
-  BookRepository,
-  ExternalBookInfo,
-  FindByIsbnResult,
-} from './interface'
+
 import { toBookInput, toExternalBookInfo } from './mappers'
+
+import type { Location } from '../../_foundation/const'
+import type { BookDto, ExternalBookDto } from '../../_models/book'
+import type { BookRepository, ExternalBookInfo, FindByIsbnResult } from '../../_usecases/book/ports'
 
 type FindByIsbnJson =
   | { status: 'registered'; book: BookDto }
@@ -34,9 +31,15 @@ export class HttpBookRepository implements BookRepository {
 
     switch (json.status) {
       case 'registered':
-        return { status: 'registered', book: Book.create(toBookInput(json.book)) }
+        return {
+          status: 'registered',
+          book: Book.create(toBookInput(json.book)),
+        }
       case 'external':
-        return { status: 'external', book: toExternalBookInfo(json.book) }
+        return {
+          status: 'external',
+          book: toExternalBookInfo(json.book),
+        }
       default:
         throw new Error(
           `GET /books/${isbn} returned unexpected status: ${(json as { status: string }).status}`,
@@ -53,10 +56,10 @@ export class HttpBookRepository implements BookRepository {
     }
 
     const raw = (await res.json()) as BookDto[]
-    return raw.map(dto => Book.create(toBookInput(dto)))
+    return raw.map((dto) => Book.create(toBookInput(dto)))
   }
 
-  async create(book: ExternalBookInfo, location: Location): Promise<void> {
+  async createItem(book: ExternalBookInfo, location: Location): Promise<void> {
     const res = await fetch(`${this.baseUrl}/books`, {
       credentials: 'include',
       method: 'POST',
@@ -70,16 +73,17 @@ export class HttpBookRepository implements BookRepository {
     }
   }
 
-  async updateCount(
-    isbn: string,
-    operation: BookCountOperation,
-    location: Location,
-  ): Promise<void> {
+  async updateItem(book: Book, location: Location): Promise<void> {
+    const isbn = String(book.id)
     const res = await fetch(`${this.baseUrl}/books/${isbn}/count`, {
       credentials: 'include',
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ operation, location }),
+      body: JSON.stringify({
+        availableCount: book.availableCount,
+        total: book.total,
+        location,
+      }),
     })
 
     if (!res.ok) {

@@ -16,7 +16,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@bookbook/utils": ["../../packages/utils/src/index.ts"]
+    }
   },
   "include": ["src"]
 }

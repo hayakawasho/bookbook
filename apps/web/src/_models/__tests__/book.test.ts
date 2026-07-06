@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { Book } from '../book/book'
 import { toBookId } from '../book/ids'
+import { History } from '../history/history'
+import { toHistoryId } from '../history/ids'
 
 import { expectImmutableMutation } from './expectImmutableMutation'
 
@@ -45,6 +47,21 @@ describe('Book', () => {
     it('全冊が在庫済みのとき return するとエラーになる', () => {
       const book = sampleBook({ availableCount: 2, total: 2 })
       expect(() => Book.return(book)).toThrow('全冊が在庫済みです')
+    })
+  })
+
+  describe('スナップショット', () => {
+    it('toSnapshot / fromHistory で Book と History の book 部分を行き来できる', () => {
+      const book = sampleBook()
+      const history = History.create({
+        ...Book.toSnapshot(book),
+        id: toHistoryId('history-1'),
+        checkoutDate: new Date('2024-01-15'),
+        isDone: false,
+        borrowerEmail: 'user@example.com',
+      })
+
+      expect(Book.fromHistory(history)).toEqual(book)
     })
   })
 })

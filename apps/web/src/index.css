@@ -54,16 +54,18 @@
 
 /* Dark mode tokens — Mock state via data-theme only (§2, Phase 1) */
 :root[data-theme="dark"] {
-  --color-primary: #FFFFFF;
-  --color-primary-contrast: #1C1F22;
-  --color-background: #1C1F22;
+  --color-primary: #ffffff;
+  --color-primary-contrast: #1c1f22;
+  --color-background: #1c1f22;
   --color-surface: #000000;
-  --color-text: #FFFFFF;
+  --color-text: #ffffff;
   --color-text-muted: #868686;
   --color-border: #363636;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 

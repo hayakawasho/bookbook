@@ -1,7 +1,11 @@
 {
   "name": "bookbook",
   "private": true,
-  "workspaces": ["apps/web", "apps/bff", "packages/*"],
+  "workspaces": [
+    "apps/web",
+    "apps/bff",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w @bookbook/web",
     "dev:bff": "npm run dev -w @bookbook/bff",
@@ -16,7 +20,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
-    "vitest": "^3.1.0"
+    "vitest": "^4.1.8"
   },
   "engines": {
     "node": ">=20"

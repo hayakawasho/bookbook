@@ -11,6 +11,8 @@ function sampleHistory(overrides: Partial<Parameters<typeof History.create>[0]> 
     isbn: '9784873119038',
     title: 'リーダブルコード',
     cover: {},
+    availableCount: 1,
+    total: 2,
     checkoutDate: new Date('2024-01-15'),
     isDone: false,
     borrowerEmail: 'user@example.com',

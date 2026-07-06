@@ -4,11 +4,7 @@ import { toHistoryId } from '../../_models/history'
 
 import type { HistoryDto } from '../../_models/history'
 
-/** BFF が在庫フィールドを含めて返す場合があるため、mapping で書誌 + 履歴のみ取り出す */
-export type HistoryWire = HistoryDto & {
-  availableCount?: number
-  total?: number
-}
+export type HistoryWire = HistoryDto
 
 export function toHistoryInput(dto: HistoryWire) {
   return {
@@ -20,6 +16,8 @@ export function toHistoryInput(dto: HistoryWire) {
     publishedDate: parseDateOrUndefined(dto.publishedDate),
     cover: dto.cover,
     description: dto.description,
+    availableCount: dto.availableCount,
+    total: dto.total,
     checkoutDate: new Date(dto.checkoutDate),
     returnDate: parseDateOrUndefined(dto.returnDate),
     isDone: dto.isDone,

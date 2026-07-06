@@ -1,6 +1,6 @@
-import type { BookBibliographyDto } from '../book/dto'
+import type { BookDto } from '../book/dto'
 
-export type HistoryDto = BookBibliographyDto & {
+export type HistoryDto = BookDto & {
   historyId: string
   checkoutDate: string
   returnDate?: string

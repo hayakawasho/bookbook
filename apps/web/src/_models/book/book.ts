@@ -1,17 +1,9 @@
 import { defineEntity, type EntityWithId } from '@bookbook/utils'
 
 import { toBookId } from './ids'
+import { type BookPayload, type BookSnapshot, pickBookPayload } from './payload'
 
-type BookPayload = {
-  title: string
-  author?: string
-  publisher?: string
-  publishedDate?: Date
-  cover: { src?: string }
-  description?: string
-  availableCount: number
-  total: number
-}
+import type { History } from '../history'
 
 type StockFields = Pick<BookPayload, 'availableCount' | 'total'>
 
@@ -57,5 +49,12 @@ export const Book = {
   },
   addStock: (b: Book): Book => {
     return Book.create({ ...b, ...addStockCopy(b) })
+  },
+  toSnapshot: (b: Book): BookSnapshot => {
+    const { id, ...payload } = b
+    return { isbn: String(id), ...payload }
+  },
+  fromHistory: (h: History): Book => {
+    return Book.create({ id: toBookId(h.isbn), ...pickBookPayload(h) })
   },
 }

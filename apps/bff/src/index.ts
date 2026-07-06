@@ -1,7 +1,8 @@
-import { Hono } from 'hono'
-import { cors } from 'hono/cors'
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { XMLParser } from 'fast-xml-parser'
+import { Hono } from 'hono'
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import { cors } from 'hono/cors'
+
 import {
   CSRF_COOKIE_NAME,
   CSRF_MAX_AGE_SEC,
@@ -10,10 +11,11 @@ import {
   requestUsesHttps,
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SEC,
+  type SessionUser,
   signSession,
   verifySession,
-  type SessionUser,
 } from './auth'
+import { validateStockTransition } from './stockTransition'
 
 type Bindings = {
   MICROCMS_DAIKANYAMA_API_KEY: string
@@ -147,7 +149,7 @@ function requireOAuthEnv(env: Bindings): Bindings | null {
 }
 
 // GET /api/auth/google/start
-app.get('/api/auth/google/start', async c => {
+app.get('/api/auth/google/start', async (c) => {
   const e = requireOAuthEnv(c.env)
   if (!e) {
     return c.json({ error: 'OAuth is not configured' }, 503)
@@ -179,7 +181,7 @@ app.get('/api/auth/google/start', async c => {
 })
 
 // GET /api/auth/google/callback
-app.get('/api/auth/google/callback', async c => {
+app.get('/api/auth/google/callback', async (c) => {
   const successPath = authSuccessPath(c.env)
   const secure = cookieSecure(c)
 
@@ -262,7 +264,7 @@ app.get('/api/auth/google/callback', async c => {
 })
 
 // GET /api/auth/me
-app.get('/api/auth/me', async c => {
+app.get('/api/auth/me', async (c) => {
   const secret = c.env.AUTH_COOKIE_SECRET
   if (!secret || secret.length < 16) {
     return c.json({ error: 'session signing is not configured' }, 503)
@@ -281,12 +283,15 @@ app.get('/api/auth/me', async c => {
 })
 
 // POST /api/auth/logout
-app.post('/api/auth/logout', async c => {
+app.post('/api/auth/logout', async (c) => {
   deleteCookie(c, SESSION_COOKIE_NAME, { path: '/' })
   return c.json({ ok: true })
 })
 
-function requireCmsEnv(env: Bindings, location: string): { apiKey: string; baseUrl: string } | null {
+function requireCmsEnv(
+  env: Bindings,
+  location: string,
+): { apiKey: string; baseUrl: string } | null {
   switch (location) {
     case 'daikanyama':
       if (!env.MICROCMS_DAIKANYAMA_API_KEY || !env.MICROCMS_DAIKANYAMA_BASE_URL) return null
@@ -301,6 +306,17 @@ function requireCmsEnv(env: Bindings, location: string): { apiKey: string; baseU
 
 function cmsHeaders(apiKey: string) {
   return { 'X-MICROCMS-API-KEY': apiKey }
+}
+
+async function findMicroCMSBook(
+  cms: { baseUrl: string; apiKey: string },
+  isbn: string,
+): Promise<MicroCMSBook | null> {
+  const params = new URLSearchParams({ filters: `id[equals]${isbn}`, limit: '1' })
+  const res = await fetch(`${cms.baseUrl}/books?${params}`, { headers: cmsHeaders(cms.apiKey) })
+  if (!res.ok) return null
+  const data = (await res.json()) as MicroCMSListResponse<MicroCMSBook>
+  return data.contents[0] ?? null
 }
 
 function bookFromCMS(raw: MicroCMSBook) {
@@ -399,6 +415,118 @@ function stripNonEmptyEntries<T extends Record<string, unknown>>(obj: T): Partia
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => !isEmpty(v))) as Partial<T>
 }
 
+const MIN_USABLE_COVER_BYTES = 512
+
+function openLibraryCoverUri(isbn: string): string {
+  return `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-L.jpg`
+}
+
+/** Google Books 等の http サムネイルを HTTPS ページから読めるよう正規化する */
+function normalizeCoverSrc(src: string | undefined): string | undefined {
+  const trimmed = src?.trim()
+  if (!trimmed) return undefined
+  return trimmed.replace(/^http:\/\//i, 'https://')
+}
+
+/** Open Library は HEAD 200 でも 1x1 GIF になることがあるため GET で実体を確認する */
+async function isUsableCoverUrl(src: string): Promise<boolean> {
+  try {
+    const res = await fetch(src, { method: 'GET', redirect: 'follow' })
+    if (!res.ok) return false
+
+    const lengthHeader = res.headers.get('content-length')
+    if (lengthHeader) {
+      const length = Number(lengthHeader)
+      if (Number.isFinite(length) && length < MIN_USABLE_COVER_BYTES) return false
+    }
+
+    const buf = await res.arrayBuffer()
+    return buf.byteLength >= MIN_USABLE_COVER_BYTES
+  } catch {
+    return false
+  }
+}
+
+function canonicalOpenBdCoverUri(isbn: string): string {
+  return `https://cover.openbd.jp/${encodeURIComponent(isbn)}.jpg`
+}
+
+/** OpenBD の表紙 URL は API 応答を信頼する（CDN がボット向け GET を拒否することがある） */
+function isTrustedOpenBdCoverSrc(src: string): boolean {
+  return /^https:\/\/cover\.openbd\.jp\//i.test(src)
+}
+
+async function firstUsableCoverSrc(
+  ...candidates: (string | undefined)[]
+): Promise<string | undefined> {
+  for (const raw of candidates) {
+    const src = normalizeCoverSrc(raw)
+    if (!src) continue
+    if (isTrustedOpenBdCoverSrc(src)) return src
+    if (await isUsableCoverUrl(src)) return src
+  }
+  return undefined
+}
+
+/** 表紙優先: OpenBD（API + 正規 URL）→ Google → NDL → Open Library */
+async function buildCoverSrc(
+  isbn: string,
+  options: { openBdSrc?: string; googleSrc?: string; ndlSrc?: string },
+): Promise<{ src?: string }> {
+  const src = await firstUsableCoverSrc(
+    options.openBdSrc,
+    canonicalOpenBdCoverUri(isbn),
+    options.googleSrc,
+    options.ndlSrc,
+    openLibraryCoverUri(isbn),
+  )
+  return { src }
+}
+
+type MetadataCoverPatch = { src?: string; clear?: boolean }
+
+/** 外部 API の書誌を microCMS PATCH 用に変換（在庫フィールドは含めない） */
+function metadataPatchFromExternal(
+  external: ExternalBookPayload,
+  cover?: MetadataCoverPatch,
+): Record<string, unknown> {
+  const payload = stripNonEmptyEntries({
+    title: external.title,
+    author: external.author,
+    publisher: external.publisher,
+    description: external.description,
+    published_date: external.publishedDate,
+  }) as Record<string, unknown>
+
+  if (cover?.clear) {
+    payload.cover_metadata = null
+  } else if (cover?.src) {
+    payload.cover_metadata = { fieldId: 'img_metadata', src: cover.src }
+  }
+
+  return payload
+}
+
+async function resolveMetadataCoverSrc(
+  external: ExternalBookPayload,
+  existingCms: MicroCMSBook,
+): Promise<MetadataCoverPatch> {
+  const existingSrc = normalizeCoverSrc(bookFromCMS(existingCms).cover?.src)
+  const resolved = await firstUsableCoverSrc(
+    external.cover?.src,
+    canonicalOpenBdCoverUri(existingCms.id),
+    existingSrc,
+  )
+  if (resolved) return { src: resolved }
+
+  // 1x1 化しやすい Open Library だけ、有効な代替が無いとき CMS から削除する
+  if (existingSrc?.includes('covers.openlibrary.org') && !(await isUsableCoverUrl(existingSrc))) {
+    return { clear: true }
+  }
+
+  return {}
+}
+
 function parseFlexibleDate(raw: unknown): string | undefined {
   if (raw === undefined || raw === null) return undefined
   const s = String(raw).trim()
@@ -454,7 +582,7 @@ type OpenBdEntry = {
 
 function extractOpenBdDescription(onix: NonNullable<OpenBdEntry['onix']>): string | undefined {
   const texts = onix.CollateralDetail?.TextContent
-  const picked = texts?.find(t => ['03', '02', '04'].includes(t.TextType ?? ''))
+  const picked = texts?.find((t) => ['03', '02', '04'].includes(t.TextType ?? ''))
   const text = picked?.Text
   return typeof text === 'string' && text.trim() !== '' ? text : undefined
 }
@@ -498,7 +626,7 @@ function formatNdlAuthor(author: string | string[] | undefined): string | undefi
   const normalize = (a: string) => a.replace(/,/g, '')
   if (author === undefined) return undefined
   if (Array.isArray(author)) {
-    const parts = author.map(a => normalize(String(a))).filter(Boolean)
+    const parts = author.map((a) => normalize(String(a))).filter(Boolean)
     return parts.length > 0 ? parts.join(', ') : undefined
   }
   const one = normalize(String(author))
@@ -557,35 +685,48 @@ async function fetchOpenBd(isbn: string): Promise<ExternalBookPayload | null> {
   return converted
 }
 
-function mergeGoogleAndOpenBd(
+async function mergeGoogleAndOpenBd(
   isbn: string,
   openBd: ExternalBookPayload | null,
   google: ExternalBookPayload | null,
-): ExternalBookPayload | null {
+): Promise<ExternalBookPayload | null> {
   if (!openBd && !google) return null
-  if (!openBd && google) return { ...google, isbn }
-  if (openBd && !google) return { ...openBd, isbn }
+  if (!openBd && google) {
+    const cover = await buildCoverSrc(isbn, { googleSrc: google.cover?.src })
+    return { ...google, isbn, cover }
+  }
+  if (openBd && !google) {
+    const cover = await buildCoverSrc(isbn, { openBdSrc: openBd.cover?.src })
+    return { ...openBd, isbn, cover }
+  }
 
-  const o = stripNonEmptyEntries(openBd as unknown as Record<string, unknown>) as Partial<ExternalBookPayload>
-  const g = stripNonEmptyEntries(google as unknown as Record<string, unknown>) as Partial<ExternalBookPayload>
+  const o = stripNonEmptyEntries(
+    openBd as unknown as Record<string, unknown>,
+  ) as Partial<ExternalBookPayload>
+  const g = stripNonEmptyEntries(
+    google as unknown as Record<string, unknown>,
+  ) as Partial<ExternalBookPayload>
 
   const title = `${g.title ?? o.title ?? ''}`.trim()
   if (!title) return null
+
+  const cover = await buildCoverSrc(isbn, {
+    openBdSrc: openBd!.cover?.src,
+    googleSrc: google!.cover?.src,
+  })
 
   return {
     ...o,
     ...g,
     isbn,
     title,
-    cover: {
-      src: openBd!.cover?.src || google!.cover?.src,
-    },
+    cover,
   }
 }
 
 async function fetchExternalBookMetadata(isbn: string): Promise<ExternalBookPayload | null> {
   const [google, openBd] = await Promise.all([fetchGoogleVolume(isbn), fetchOpenBd(isbn)])
-  const primary = mergeGoogleAndOpenBd(isbn, openBd, google)
+  const primary = await mergeGoogleAndOpenBd(isbn, openBd, google)
   if (primary?.title) return primary
 
   const ndlRes = await fetch(
@@ -597,28 +738,25 @@ async function fetchExternalBookMetadata(isbn: string): Promise<ExternalBookPayl
   if (!ndl?.title) return null
 
   const thumbUri = `https://iss.ndl.go.jp/thumbnail/${encodeURIComponent(isbn)}`
-  const thumbOk = await fetch(thumbUri).then(r => r.ok)
+  const thumbOk = await fetch(thumbUri).then((r) => r.ok)
+  const cover = await buildCoverSrc(isbn, { ndlSrc: thumbOk ? thumbUri : undefined })
 
-  return {
-    ...ndl,
-    cover: {
-      src: thumbOk ? thumbUri : undefined,
-    },
-  }
+  return { ...ndl, cover }
 }
 
 // GET /api/books?q=&location=
-app.get('/api/books', async c => {
+app.get('/api/books', async (c) => {
   const { q = '', location } = c.req.query()
   if (!location) return c.json({ error: 'location is required' }, 400)
 
-	const cms = requireCmsEnv(c.env, location)
+  const cms = requireCmsEnv(c.env, location)
 
   if (cms === null && !['daikanyama', 'okinawa'].includes(location)) {
     return c.json({ error: 'unknown location' }, 400)
   }
 
-  if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
   const params = new URLSearchParams({ limit: '100' })
   if (q) params.set('q', q)
@@ -631,13 +769,14 @@ app.get('/api/books', async c => {
 })
 
 // GET /api/books/:isbn?location=
-app.get('/api/books/:isbn', async c => {
+app.get('/api/books/:isbn', async (c) => {
   const isbn = c.req.param('isbn')
   const { location } = c.req.query()
   if (!location) return c.json({ error: 'location is required' }, 400)
 
   const cms = requireCmsEnv(c.env, location)
-  if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
   const params = new URLSearchParams({ filters: `id[equals]${isbn}`, limit: '1' })
   const res = await fetch(`${cms.baseUrl}/books?${params}`, { headers: cmsHeaders(cms.apiKey) })
@@ -660,7 +799,7 @@ app.get('/api/books/:isbn', async c => {
 })
 
 // POST /api/books
-app.post('/api/books', async c => {
+app.post('/api/books', async (c) => {
   const body = await c.req.json<{
     isbn: string
     title: string
@@ -671,9 +810,10 @@ app.post('/api/books', async c => {
     location: string
   }>()
 
-	const cms = requireCmsEnv(c.env, body.location)
+  const cms = requireCmsEnv(c.env, body.location)
 
-  if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
   const payload: Record<string, unknown> = stripNonEmptyEntries({
     title: body.title,
@@ -693,62 +833,103 @@ app.post('/api/books', async c => {
 
   if (!res.ok) {
     const errBody = await res.text().catch(() => '<unreadable>')
-    console.error('microCMS POST /books failed', { status: res.status, body: errBody, sentPayload: payload })
-    return c.json({ error: 'microCMS request failed', upstreamStatus: res.status, upstreamBody: errBody }, 502)
+    console.error('microCMS POST /books failed', {
+      status: res.status,
+      body: errBody,
+      sentPayload: payload,
+    })
+    return c.json(
+      { error: 'microCMS request failed', upstreamStatus: res.status, upstreamBody: errBody },
+      502,
+    )
   }
 
   return c.json({ ok: true }, 201)
 })
 
-// PATCH /api/books/:isbn/count
-app.patch('/api/books/:isbn/count', async c => {
+// PATCH /api/books/:isbn/count — 在庫数の更新（クライアント計算値をサーバーで遷移検証）
+app.patch('/api/books/:isbn/count', async (c) => {
   const isbn = c.req.param('isbn')
-  const { operation, location } = await c.req.json<{
-    operation: 'add-copy' | 'checkout' | 'return'
+  const { availableCount, total, location } = await c.req.json<{
+    availableCount: number
+    total: number
     location: string
   }>()
 
   const cms = requireCmsEnv(c.env, location)
-  if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
   const findRes = await fetch(`${cms.baseUrl}/books?filters=id[equals]${isbn}&limit=1`, {
     headers: cmsHeaders(cms.apiKey),
-	})
+  })
 
-	if (!findRes.ok) return c.json({ error: 'microCMS request failed' }, 502)
+  if (!findRes.ok) return c.json({ error: 'microCMS request failed' }, 502)
 
-	const found = (await findRes.json()) as MicroCMSListResponse<MicroCMSBook>
+  const found = (await findRes.json()) as MicroCMSListResponse<MicroCMSBook>
 
   if (found.contents.length === 0) return c.json({ error: 'book not found' }, 404)
 
   const book = found.contents[0]
-  let availableCount = book.available_count
-  let total = book.total
+  const validation = validateStockTransition(
+    { available_count: book.available_count, total: book.total },
+    { availableCount, total },
+  )
 
-  switch (operation) {
-    case 'add-copy':
-      total += 1
-      availableCount += 1
-      break
-    case 'checkout':
-      if (availableCount <= 0) return c.json({ error: 'not available' }, 409)
-      availableCount -= 1
-      break
-    case 'return':
-      if (availableCount >= total) return c.json({ error: 'already fully returned' }, 409)
-      availableCount += 1
-      break
+  if (!validation.ok) {
+    const status = validation.reason === 'invalid stock transition' ? 400 : 409
+    return c.json({ error: validation.reason }, status)
   }
 
   const patchRes = await fetch(`${cms.baseUrl}/books/${book.id}`, {
     method: 'PATCH',
     headers: { ...cmsHeaders(cms.apiKey), 'Content-Type': 'application/json' },
     body: JSON.stringify({ available_count: availableCount, total }),
-	})
+  })
 
-	if (!patchRes.ok) return c.json({ error: 'microCMS request failed' }, 502)
+  if (!patchRes.ok) return c.json({ error: 'microCMS request failed' }, 502)
 
   return c.json({ ok: true })
+})
+
+// PATCH /api/books/:isbn/metadata — 外部 API の書誌で microCMS を更新（在庫は変更しない）
+app.patch('/api/books/:isbn/metadata', async (c) => {
+  const isbn = c.req.param('isbn')
+  const { location } = await c.req.json<{ location: string }>()
+  if (!location) return c.json({ error: 'location is required' }, 400)
+
+  const cms = requireCmsEnv(c.env, location)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+
+  const existing = await findMicroCMSBook(cms, isbn)
+  if (!existing) return c.json({ error: 'book not found' }, 404)
+
+  const external = await fetchExternalBookMetadata(isbn)
+  if (!external?.title) return c.json({ error: 'external metadata not found' }, 404)
+
+  const coverPatch = await resolveMetadataCoverSrc(external, existing)
+
+  const patchRes = await fetch(`${cms.baseUrl}/books/${existing.id}`, {
+    method: 'PATCH',
+    headers: { ...cmsHeaders(cms.apiKey), 'Content-Type': 'application/json' },
+    body: JSON.stringify(metadataPatchFromExternal(external, coverPatch)),
+  })
+
+  if (!patchRes.ok) {
+    const errBody = await patchRes.text().catch(() => '<unreadable>')
+    console.error('microCMS PATCH /books metadata failed', {
+      status: patchRes.status,
+      body: errBody,
+      isbn,
+    })
+    return c.json({ error: 'microCMS request failed' }, 502)
+  }
+
+  const updated = await findMicroCMSBook(cms, isbn)
+  if (!updated) return c.json({ error: 'book not found after update' }, 502)
+
+  return c.json({ book: bookFromCMS(updated) })
 })
 
 /** microCMS 一覧 GET の filters: ログインユーザーの borrower_email とオプションの is_done */
@@ -761,13 +942,14 @@ function historyListFilters(email: string, isDone?: string): string {
 }
 
 // GET /api/history?location=&isDone=
-app.get('/api/history', async c => {
+app.get('/api/history', async (c) => {
   const sessionUser = c.get('sessionUser')
   const { location, isDone } = c.req.query()
   if (!location) return c.json({ error: 'location is required' }, 400)
 
   const cms = requireCmsEnv(c.env, location)
-  if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
   const params = new URLSearchParams({
     limit: '100',
@@ -783,12 +965,13 @@ app.get('/api/history', async c => {
 })
 
 // POST /api/history
-app.post('/api/history', async c => {
+app.post('/api/history', async (c) => {
   const { isbn, location } = await c.req.json<{ isbn: string; location: string }>()
   const sessionUser = c.get('sessionUser')
 
   const cms = requireCmsEnv(c.env, location)
-  if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
   // 書籍メタデータを取得
   const bookRes = await fetch(`${cms.baseUrl}/books?filters=id[equals]${isbn}&limit=1`, {
@@ -811,30 +994,30 @@ app.post('/api/history', async c => {
     method: 'POST',
     headers: { ...cmsHeaders(cms.apiKey), 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-	})
+  })
 
-	if (!createRes.ok) return c.json({ error: 'microCMS request failed' }, 502)
+  if (!createRes.ok) return c.json({ error: 'microCMS request failed' }, 502)
 
   const created = (await createRes.json()) as MicroCMSHistory
 
   const detailRes = await fetch(`${cms.baseUrl}/history/${created.id}?depth=2`, {
     headers: cmsHeaders(cms.apiKey),
-	})
+  })
 
-  const full =
-    detailRes.ok ? ((await detailRes.json()) as MicroCMSHistory) : created
+  const full = detailRes.ok ? ((await detailRes.json()) as MicroCMSHistory) : created
 
   return c.json(historyFromCMS(full), 201)
 })
 
 // PATCH /api/history/:id
-app.patch('/api/history/:id', async c => {
+app.patch('/api/history/:id', async (c) => {
   const sessionUser = c.get('sessionUser')
   const id = c.req.param('id')
   const { location } = await c.req.json<{ isbn: string; location: string }>()
 
   const cms = requireCmsEnv(c.env, location)
-  if (!cms) return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
+  if (!cms)
+    return c.json({ error: 'microCMS credentials are not configured for this location' }, 503)
 
   const existingRes = await fetch(`${cms.baseUrl}/history/${id}`, {
     headers: cmsHeaders(cms.apiKey),
@@ -862,7 +1045,7 @@ function checkoutBorrowerSlackLabel(user: SessionUser): string {
 }
 
 // POST /api/notifications/slack
-app.post('/api/notifications/slack', async c => {
+app.post('/api/notifications/slack', async (c) => {
   const sessionUser = c.get('sessionUser')
   if (!c.env.SLACK_WEBHOOK_URL) {
     // Slack未設定はサイレントスキップ

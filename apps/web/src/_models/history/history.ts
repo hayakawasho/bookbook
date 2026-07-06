@@ -2,20 +2,7 @@ import { defineEntity, type EntityWithId } from '@bookbook/utils'
 
 import { toHistoryId } from './ids'
 
-type HistoryPayload = {
-  isbn: string
-  title: string
-  author?: string
-  publisher?: string
-  publishedDate?: Date
-  cover: { src?: string }
-  description?: string
-  checkoutDate: Date
-  returnDate?: Date
-  isDone: boolean
-  borrowerEmail: string
-  borrowerName?: string
-}
+import type { HistoryPayload } from './payload'
 
 export type History = EntityWithId<HistoryPayload, 'history'>
 

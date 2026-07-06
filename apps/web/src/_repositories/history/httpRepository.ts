@@ -3,7 +3,7 @@ import { History } from '../../_models/history'
 import { type HistoryWire, toHistoryInput } from './mappers'
 
 import type { Location } from '../../_foundation/const'
-import type { HistoryQuery, HistoryRepository } from './interface'
+import type { HistoryQuery, HistoryRepository } from '../../_usecases/history/ports'
 
 export class HttpHistoryRepository implements HistoryRepository {
   constructor(private readonly baseUrl: string) {}
@@ -25,7 +25,7 @@ export class HttpHistoryRepository implements HistoryRepository {
     return raw.map((dto) => History.create(toHistoryInput(dto)))
   }
 
-  async createCheckout(isbn: string, location: Location): Promise<History> {
+  async createItem(isbn: string, location: Location): Promise<History> {
     const res = await fetch(`${this.baseUrl}/history`, {
       credentials: 'include',
       method: 'POST',
@@ -41,7 +41,7 @@ export class HttpHistoryRepository implements HistoryRepository {
     return History.create(toHistoryInput(raw))
   }
 
-  async markReturned(historyId: string, isbn: string, location: Location): Promise<void> {
+  async updateItem(historyId: string, isbn: string, location: Location): Promise<void> {
     const res = await fetch(`${this.baseUrl}/history/${historyId}`, {
       credentials: 'include',
       method: 'PATCH',

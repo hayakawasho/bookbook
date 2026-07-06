@@ -1,9 +1,9 @@
+import { Book } from '../../_models/book'
 import { History, toHistoryId } from '../../_models/history'
 
 import type { Location } from '../../_foundation/const'
-import type { Book } from '../../_models/book'
-import type { BookRepository } from '../books/interface'
-import type { HistoryQuery, HistoryRepository } from './interface'
+import type { BookRepository } from '../../_usecases/book/ports'
+import type { HistoryQuery, HistoryRepository } from '../../_usecases/history/ports'
 
 let idCounter = 1
 
@@ -18,13 +18,7 @@ function matchesHistoryQuery(history: History, query: HistoryQuery): boolean {
 function createHistoryFromBook(book: Book) {
   return {
     id: toHistoryId(String(idCounter++)),
-    isbn: String(book.id),
-    title: book.title,
-    author: book.author,
-    publisher: book.publisher,
-    publishedDate: book.publishedDate,
-    cover: book.cover,
-    description: book.description,
+    ...Book.toSnapshot(book),
     checkoutDate: new Date(),
     isDone: false,
     borrowerEmail: 'mock@local.dev',
@@ -42,7 +36,7 @@ export class MockHistoryRepository implements HistoryRepository {
     return Promise.resolve(list)
   }
 
-  async createCheckout(isbn: string, location: Location): Promise<History> {
+  async createItem(isbn: string, location: Location): Promise<History> {
     const found = await this.books.findByIsbn(isbn, location)
 
     if (found.status !== 'registered') {
@@ -54,7 +48,7 @@ export class MockHistoryRepository implements HistoryRepository {
     return record
   }
 
-  markReturned(historyId: string, isbn: string, _location: Location): Promise<void> {
+  updateItem(historyId: string, isbn: string, _location: Location): Promise<void> {
     this.histories = this.histories.map((h) => {
       const isTarget = String(h.id) === historyId && h.isbn === isbn
 
