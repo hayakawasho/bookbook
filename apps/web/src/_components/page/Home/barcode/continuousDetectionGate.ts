@@ -16,6 +16,12 @@ export function createContinuousDetectionGate(rearmGapMs: number) {
 
       return !isContinuousSighting
     },
+
+    /** 明示的なスキャン再開操作（カメラの再オン等）で抑止状態を破棄する */
+    reset(): void {
+      lastRaw = null
+      lastSeenAt = 0
+    },
   }
 }
 

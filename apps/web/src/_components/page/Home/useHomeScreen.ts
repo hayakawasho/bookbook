@@ -24,7 +24,8 @@ export function useHomeScreen() {
     notFound,
     setNotFound,
     onLookupIsbn: setLookupIsbn,
-    onLookupInvalid: () => setLookupIsbn(null),
+    // インライン関数だと useHomeBarcodeScan のカメラ起動 effect がレンダーごとに再実行される
+    onLookupInvalid: useCallback(() => setLookupIsbn(null), []),
     onResetSheet: sheet.resetSheet,
   })
 

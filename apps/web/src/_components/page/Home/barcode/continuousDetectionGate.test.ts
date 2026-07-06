@@ -42,4 +42,12 @@ describe('createContinuousDetectionGate', () => {
 
     expect(gate.shouldHandle('978B', 125)).toBe(true)
   })
+
+  it('reset 後は同じバーコードでも新規スキャンとして扱う', () => {
+    const gate = createContinuousDetectionGate(GAP)
+    gate.shouldHandle('978A', 0)
+    gate.reset()
+
+    expect(gate.shouldHandle('978A', 125)).toBe(true)
+  })
 })

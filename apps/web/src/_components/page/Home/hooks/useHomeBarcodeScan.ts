@@ -34,7 +34,9 @@ export function useHomeBarcodeScan({
   onResetSheet,
 }: UseHomeBarcodeScanOptions) {
   const barcodeScannerRef = useRef(createBarcodeScanner())
-  const detectionGateRef = useRef(createContinuousDetectionGate(1500))
+  // fps=8（約125ms間隔）で映りっぱなしなら検知が途切れない前提。本を持ち上げて再度かざす動作は
+  // 数百msの検知断で判別できるため、短めにして「すぐ再スキャン」を成立させる
+  const detectionGateRef = useRef(createContinuousDetectionGate(700))
 
   const [isbnInput, setIsbnInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -130,6 +132,7 @@ export function useHomeBarcodeScan({
       return
     }
 
+    detectionGateRef.current.reset()
     setCameraOpen(true)
   }
 
