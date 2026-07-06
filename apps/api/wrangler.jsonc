@@ -20,8 +20,7 @@
     {
       "binding": "DB",
       "database_name": "bookbook-db",
-      // `wrangler d1 create bookbook-db` 実行後に発行される database_id に置き換える
-      "database_id": "TBD-set-after-d1-create",
+      "database_id": "7cc2bd14-e1be-4e10-8ace-c837ad3789c5",
       "migrations_dir": "migrations"
     }
   ]
