@@ -3,7 +3,6 @@ import { type UseCaseResult, useCaseResultError, useCaseResultOk } from '@bookbo
 import { Book } from '../../_models/book'
 
 import type { Location } from '../../_foundation/const'
-import type { NotificationGateway } from '../../_foundation/notificationGateway'
 import type { HistoryRepository } from '../history/ports'
 import type { BookCacheMutator } from './cache'
 import type { BookRepository, ExternalBookInfo } from './ports'
@@ -11,7 +10,6 @@ import type { BookRepository, ExternalBookInfo } from './ports'
 export type BookDeps = {
   bookRepo: BookRepository
   historyRepo: HistoryRepository
-  notify: NotificationGateway
   mutator: BookCacheMutator
 }
 
@@ -25,8 +23,6 @@ export async function addNewBook(
     const created = await deps.bookRepo.findByIsbn(book.isbn, location)
 
     if (created.status === 'registered') {
-      await deps.notify.notify('new-book', location, created.book)
-
       await Promise.all([
         deps.mutator.mutateItem(String(created.book.id), created, false),
         deps.mutator.mutateAllList(),
@@ -55,13 +51,10 @@ export async function checkoutBook(
     const updated = Book.checkout(book)
     const isbn = String(book.id)
 
-    await deps.bookRepo.updateItem(updated, location)
     await deps.historyRepo.createItem(isbn, location)
 
     // createItem 成功後は貸出履歴キャッシュを必ず再検証（findByIsbn が未登録でも stale にしない）
     await deps.mutator.mutateManyHistory()
-
-    await deps.notify.notify('checkout', location, updated)
 
     await Promise.all([
       deps.mutator.mutateItem(isbn, { status: 'registered', book: updated }, false),
@@ -106,12 +99,9 @@ export async function returnBook(
     const updated = Book.return(book)
     const isbn = String(book.id)
 
-    await deps.historyRepo.updateItem(historyId, isbn, location)
-    await deps.bookRepo.updateItem(updated, location)
+    await deps.historyRepo.returnItem(historyId, location)
 
     await deps.mutator.mutateManyHistory()
-
-    await deps.notify.notify('return', location, updated)
 
     await Promise.all([
       deps.mutator.mutateItem(isbn, { status: 'registered', book: updated }, false),

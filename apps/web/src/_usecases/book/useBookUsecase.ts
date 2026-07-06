@@ -17,14 +17,13 @@ import type { Book } from '../../_models/book'
 import type { ExternalBookInfo } from './ports'
 
 export function useBookUsecase() {
-  const { bookRepo, historyRepo, notify } = useUsecaseDeps()
+  const { bookRepo, historyRepo } = useUsecaseDeps()
   const mutator = useBookCacheMutator()
 
   return useMemo(() => {
     const deps: BookDeps = {
       bookRepo,
       historyRepo,
-      notify,
       mutator,
     }
 
@@ -46,5 +45,5 @@ export function useBookUsecase() {
         location: Location,
       ): Promise<UseCaseResult<true, Error>> => runReturnBook(deps, historyId, book, location),
     }
-  }, [bookRepo, historyRepo, notify, mutator])
+  }, [bookRepo, historyRepo, mutator])
 }

@@ -4,7 +4,7 @@ import { UsecaseDepsProvider } from '../../_usecases/deps'
 
 import { AppStateProvider, useAppState } from './AppStateContext'
 import { AuthProvider } from './AuthContext'
-import { bookRepo, historyRepo, notificationGateway } from './repositories'
+import { bookRepo, historyRepo } from './repositories'
 
 function UsecaseDepsBridge({ children }: { children: ReactNode }) {
   const { state } = useAppState()
@@ -13,7 +13,6 @@ function UsecaseDepsBridge({ children }: { children: ReactNode }) {
     () => ({
       bookRepo,
       historyRepo,
-      notify: notificationGateway,
       location: state.location,
     }),
     [state.location],

@@ -41,12 +41,12 @@ export class HttpHistoryRepository implements HistoryRepository {
     return History.create(toHistoryInput(raw))
   }
 
-  async updateItem(historyId: string, isbn: string, location: Location): Promise<void> {
+  async returnItem(historyId: string, location: Location): Promise<void> {
     const res = await fetch(`${this.baseUrl}/history/${historyId}`, {
       credentials: 'include',
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isbn, location }),
+      body: JSON.stringify({ location }),
     })
 
     if (!res.ok) {

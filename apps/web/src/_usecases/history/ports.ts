@@ -9,5 +9,5 @@ export type HistoryQuery = {
 export interface HistoryRepository {
   findMany(query: HistoryQuery, location: Location): Promise<History[]>
   createItem(isbn: string, location: Location): Promise<History>
-  updateItem(historyId: string, isbn: string, location: Location): Promise<void>
+  returnItem(historyId: string, location: Location): Promise<void>
 }

@@ -43,22 +43,30 @@ export class MockHistoryRepository implements HistoryRepository {
       throw new Error(`MockHistoryRepository: book not registered for isbn=${isbn}`)
     }
 
+    // サーバー側で貸出時に在庫減算されるため、Mock でも同様に反映する
+    await this.books.updateItem(Book.checkout(found.book), location)
+
     const record = History.create(createHistoryFromBook(found.book))
     this.histories.push(record)
     return record
   }
 
-  updateItem(historyId: string, isbn: string, _location: Location): Promise<void> {
-    this.histories = this.histories.map((h) => {
-      const isTarget = String(h.id) === historyId && h.isbn === isbn
+  async returnItem(historyId: string, location: Location): Promise<void> {
+    const target = this.histories.find((h) => String(h.id) === historyId)
 
-      if (!isTarget) {
-        return h
-      }
+    if (!target || History.isReturned(target)) {
+      return
+    }
 
-      return History.markReturned(h, new Date())
-    })
+    // サーバー側で返却時に在庫が戻るため、Mock でも同様に反映する
+    const found = await this.books.findByIsbn(target.isbn, location)
 
-    return Promise.resolve()
+    if (found.status === 'registered') {
+      await this.books.updateItem(Book.return(found.book), location)
+    }
+
+    this.histories = this.histories.map((h) =>
+      String(h.id) === historyId ? History.markReturned(h, new Date()) : h,
+    )
   }
 }
