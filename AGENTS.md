@@ -2,7 +2,7 @@
 
 ## プロジェクト概要
 
-BooKBooK — 蔵書・貸出履歴などを扱う Web アプリ（npm workspaces モノレポ）。フロントは `apps/web`、BFF（`/api/*`）は `apps/bff`。
+BooKBooK — 蔵書・貸出履歴などを扱う Web アプリ（npm workspaces モノレポ）。フロントは `apps/web`、API（`/api/*`）は `apps/api`。
 
 ## 技術スタック（概要）
 
@@ -10,7 +10,7 @@ BooKBooK — 蔵書・貸出履歴などを扱う Web アプリ（npm workspaces
 | -------------------- | ---------------------------------------- |
 | 言語                 | TypeScript                               |
 | フロント             | React 19、Vite 6、Tailwind CSS 4、SWR    |
-| BFF / Worker         | Cloudflare Workers、Hono 4（`apps/bff`） |
+| API / Worker         | Cloudflare Workers、Hono 4（`apps/api`） |
 | パッケージマネージャ | npm（workspaces）                        |
 | Node                 | >= 20                                    |
 
@@ -22,14 +22,14 @@ BooKBooK — 蔵書・貸出履歴などを扱う Web アプリ（npm workspaces
 
 ```sh
 npm run dev        # Vite（@bookbook/web）
-npm run dev:bff    # wrangler dev（@bookbook/bff、ローカル /api）
+npm run dev:api    # wrangler dev（@bookbook/api、ローカル /api）
 npm run build      # 本番ビルド（Web）
-npm run deploy:bff # BFF を Wrangler でデプロイ
+npm run deploy:api # API を Wrangler でデプロイ
 npm run preview    # Web のビルド結果プレビュー
-npm run test       # Vitest（web の後に bff）
+npm run test       # Vitest（web の後に api）
 ```
 
-ローカルで HTTP API を使うときは **`dev:bff` と `dev` を併用**する（Vite が `/api` を Wrangler にプロキシ）。
+ローカルで HTTP API を使うときは **`dev:api` と `dev` を併用**する（Vite が `/api` を Wrangler にプロキシ）。
 
 ## アーキテクチャ
 
@@ -41,7 +41,7 @@ npm run test       # Vitest（web の後に bff）
 _components     = 画面に置くもの（app / page / feature / ui）。app は composition root（Context と repositories.ts を持ち、具象を注入する）
 _models         = ドメイン概念（entity / value object / id）。他レイヤーを知らない
 _usecases       = 複数 page / feature で共有する usecase（ports / queries / commands / policies）
-_repositories   = BFF `/api/*` の adapter。_usecases の port を実装する
+_repositories   = API `/api/*` の adapter。_usecases の port を実装する
 _foundation     = 画面を成立させる基盤。特定 page / feature / ui を知らない
 _libs           = 外部ライブラリの薄い adapter
 packages/utils  = 外部依存を持たない純粋 utility

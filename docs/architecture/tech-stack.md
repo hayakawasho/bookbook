@@ -10,10 +10,10 @@
 | リポジトリ構成 | npm workspaces によるモノレポ             |
 | Node.js        | `>= 20`（ルート `package.json` の engines） |
 | 公開アプリ     | Web（`apps/web`）がメイン成果物             |
-| BFF / API      | `apps/bff`（Cloudflare Workers + Hono）     |
+| API サーバー   | `apps/api`（Cloudflare Workers + Hono + D1） |
 | 共有コード     | `packages/utils`（DOM / React 非依存の TypeScript のみ） |
 
-ワークスペース定義はルート `package.json` の `workspaces: ["apps/web", "apps/bff", "packages/*"]` に準拠する。
+ワークスペース定義はルート `package.json` の `workspaces: ["apps/web", "apps/api", "packages/*"]` に準拠する。
 
 ## Web フロントエンド（`apps/web`）
 
@@ -32,14 +32,14 @@
 
 ルーティングは React Router ではなく、**タブ状態を Context で保持するシングルページ構成**（`_components/app` の `AppStateContext` + `BottomTabs`）。
 
-フロントから API へのパスは **`/api` 固定**（例: `API_BASE = '/api'`）。Cookie 認証のため **本番でも同一オリジンで `/api/*` が BFF に届く**ようにインフラを組む前提とする。
+フロントから API へのパスは **`/api` 固定**（例: `API_BASE = '/api'`）。Cookie 認証のため **本番でも同一オリジンで `/api/*` が API に届く**ようにインフラを組む前提とする。
 
 ### ローカル開発時の `/api`
 
-Vite の開発サーバーが **`/api` を `wrangler dev`（既定 `http://127.0.0.1:8787`）へプロキシ**する。別ターミナルで BFF を起動する。
+Vite の開発サーバーが **`/api` を `wrangler dev`（既定 `http://127.0.0.1:8787`）へプロキシ**する。別ターミナルで API を起動する。
 
 ```sh
-npm run dev:bff   # @bookbook/bff（wrangler dev）
+npm run dev:api   # @bookbook/api（wrangler dev）
 npm run dev       # @bookbook/web（Vite）
 ```
 
@@ -47,19 +47,19 @@ npm run dev       # @bookbook/web（Vite）
 
 フロントエンドのディレクトリ境界と依存ルールは [frontend-structure.md](./frontend-structure.md) を参照する。
 
-## BFF（`apps/bff`）
+## API（`apps/api`）
 
 | 項目           | 選定 |
 | -------------- | ---- |
 | 実行環境       | Cloudflare Workers（Wrangler で開発・デプロイ） |
 | HTTP フレームワーク | Hono 4 |
 | 認証           | Google OAuth 2.0 + HTTP-only Cookie セッション（`src/auth.ts`） |
-| CMS            | microCMS（複数拠点用に API キー・ベース URL を環境変数で切替） |
+| データベース   | Cloudflare D1（`bookbook-db`。拠点は `location` カラムで表現、マイグレーションは `migrations/`） |
 | 外部メタデータ | ISBN に対し OpenBD / Google Books API / NDL OpenSearch 等を Worker から取得・マージ |
 | XML パース     | fast-xml-parser（NDL 応答など） |
-| 通知           | Slack Incoming Webhook（任意） |
+| 通知           | Slack Incoming Webhook（任意。貸出・返却・新規登録時にサーバー側から送信） |
 
-API は `apps/bff/src/index.ts` に集約し、`/api/*` プレフィックスで提供する。
+`/api/*` プレフィックスで提供する。構成はトランザクションスクリプト: `routes/`（HTTP の関心）、`db.ts`（唯一 SQL を知る層）、`domain/`（純粋ルール）、`external/`（外部 I/O）。貸出・返却は `db.batch` + `changes()` ガードで原子的に実行する。
 
 ## テスト
 
@@ -67,7 +67,7 @@ API は `apps/bff/src/index.ts` に集約し、`/api/*` プレフィックスで
 | -------- | ---- |
 | ランナー | Vitest 3（ルート `devDependencies` でワークスペース共通） |
 | Web      | `apps/web/vitest.config.ts` — `environment: 'jsdom'`、`src/**/*.test.{ts,tsx}`、セットアップで `@testing-library/jest-dom` と `cleanup` |
-| BFF      | `apps/bff/vitest.config.ts` — `src/**/*.test.tsx`、`environment: 'node'` |
+| API      | `apps/api/vitest.config.ts` — `@cloudflare/vitest-pool-workers`（miniflare 上の実 D1 でテスト、setup でマイグレーション適用） |
 
 フロントエンドのテスト方針・統合テストの対象と API モックは [frontend-structure.md](./frontend-structure.md) の「テスト戦略との関係」を参照する。
 
@@ -77,13 +77,13 @@ API は `apps/bff/src/index.ts` に集約し、`/api/*` プレフィックスで
 
 ```sh
 npm run dev        # @bookbook/web の dev（Vite）
-npm run dev:bff    # @bookbook/bff の wrangler dev（/api 用）
+npm run dev:api    # @bookbook/api の wrangler dev（/api 用）
 npm run build      # @bookbook/web の production build
-npm run deploy:bff # @bookbook/bff を wrangler deploy
+npm run deploy:api # @bookbook/api を wrangler deploy
 npm run preview    # @bookbook/web の preview
 npm run storybook  # @bookbook/web の Storybook（開発）
 npm run build-storybook # @bookbook/web の Storybook 静的ビルド（storybook-static）
-npm run test       # @bookbook/web → @bookbook/bff の順で vitest run
+npm run test       # @bookbook/web → @bookbook/api の順で vitest run
 ```
 
 各 `apps/*` 直下でも同名 script を定義している。
@@ -94,11 +94,11 @@ npm run test       # @bookbook/web → @bookbook/bff の順で vitest run
 | -------------- | ------ |
 | Web 依存関係   | `apps/web/package.json` |
 | Vite 設定      | `apps/web/vite.config.ts` |
-| BFF エントリ   | `apps/bff/src/index.ts` |
-| Wrangler       | `apps/bff/wrangler.jsonc` |
-| ローカルシークレット（任意） | `apps/bff/.dev.vars`（gitignore、`wrangler dev` が読む） |
+| API エントリ   | `apps/api/src/index.ts` |
+| Wrangler       | `apps/api/wrangler.jsonc` |
+| ローカルシークレット（任意） | `apps/api/.dev.vars`（gitignore、`wrangler dev` が読む） |
 | Vitest（Web）  | `apps/web/vitest.config.ts` |
-| Vitest（BFF）  | `apps/bff/vitest.config.ts` |
+| Vitest（API）  | `apps/api/vitest.config.ts` |
 | 共有パッケージ | `packages/utils/package.json` |
 
 ---

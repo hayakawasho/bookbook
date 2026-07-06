@@ -7,13 +7,13 @@ flowchart TD
   App[_components/app<br>composition root] --> Components[Components<br>page / feature / ui]
   Components --> Usecases[_usecases<br>ports / queries / commands / policies]
   Usecases --> Models[_models]
-  Repositories[_repositories<br>BFF /api adapter] --> Usecases
+  Repositories[_repositories<br>API /api adapter] --> Usecases
   Repositories --> Models
   Repositories --> Foundation[_foundation]
   Components --> Foundation
   Foundation --> Libs[_libs<br>Library Adapters]
   Components --> Utils[packages/utils]
-  Repositories --> BFF[apps/bff<br>Cloudflare Workers + Hono]
+  Repositories --> API[apps/api<br>Cloudflare Workers + Hono]
 ```
 
 配置判断の軸とフローは [Frontend Directory Structure](./frontend-structure.md) を参照。
