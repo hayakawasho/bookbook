@@ -20,5 +20,5 @@ export interface BookRepository {
   findByIsbn(isbn: string, location: Location): Promise<FindByIsbnResult>
   findMany(query: string, location: Location): Promise<Book[]>
   createItem(book: ExternalBookInfo, location: Location): Promise<void>
-  updateItem(book: Book, location: Location): Promise<void>
+  addCopy(isbn: string, location: Location): Promise<Book>
 }

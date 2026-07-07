@@ -73,21 +73,19 @@ export class HttpBookRepository implements BookRepository {
     }
   }
 
-  async updateItem(book: Book, location: Location): Promise<void> {
-    const isbn = String(book.id)
-    const res = await fetch(`${this.baseUrl}/books/${isbn}/count`, {
+  async addCopy(isbn: string, location: Location): Promise<Book> {
+    const res = await fetch(`${this.baseUrl}/books/${isbn}/copies`, {
       credentials: 'include',
-      method: 'PATCH',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        availableCount: book.availableCount,
-        total: book.total,
-        location,
-      }),
+      body: JSON.stringify({ location }),
     })
 
     if (!res.ok) {
-      throw new Error(`PATCH /books/${isbn}/count failed: ${res.status}`)
+      throw new Error(`POST /books/${isbn}/copies failed: ${res.status}`)
     }
+
+    const { book } = (await res.json()) as { book: BookDto }
+    return Book.create(toBookInput(book))
   }
 }

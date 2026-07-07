@@ -123,9 +123,21 @@ export class MockBookRepository implements BookRepository {
     return Promise.resolve()
   }
 
-  updateItem(book: Book, _location: Location): Promise<void> {
+  addCopy(isbn: string, _location: Location): Promise<Book> {
+    const target = this.books.find((b) => String(b.id) === isbn)
+
+    if (!target) {
+      return Promise.reject(new Error(`MockBookRepository: book not found for isbn=${isbn}`))
+    }
+
+    const updated = Book.addStock(target)
+    this.internalUpdateItem(updated)
+    return Promise.resolve(updated)
+  }
+
+  // MockHistoryRepository が貸出/返却時の在庫増減に使う port 外の内部更新手段
+  internalUpdateItem(book: Book): void {
     const isbn = String(book.id)
     this.books = this.books.map((b) => (String(b.id) === isbn ? book : b))
-    return Promise.resolve()
   }
 }

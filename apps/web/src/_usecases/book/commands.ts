@@ -73,9 +73,7 @@ export async function restockBook(
   location: Location,
 ): Promise<UseCaseResult<true, Error>> {
   try {
-    const updated = Book.addStock(book)
-
-    await deps.bookRepo.updateItem(updated, location)
+    const updated = await deps.bookRepo.addCopy(String(book.id), location)
 
     await Promise.all([
       deps.mutator.mutateItem(String(book.id), { status: 'registered', book: updated }, false),

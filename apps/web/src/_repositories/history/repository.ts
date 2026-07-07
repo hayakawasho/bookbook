@@ -4,6 +4,7 @@ import { History, toHistoryId } from '../../_models/history'
 import type { Location } from '../../_foundation/const'
 import type { BookRepository } from '../../_usecases/book/ports'
 import type { HistoryQuery, HistoryRepository } from '../../_usecases/history/ports'
+import type { MockBookRepository } from '../books/repository'
 
 let idCounter = 1
 
@@ -27,7 +28,8 @@ function createHistoryFromBook(book: Book) {
 }
 
 export class MockHistoryRepository implements HistoryRepository {
-  constructor(private readonly books: BookRepository) {}
+  // 実行時は必ず MockBookRepository とペアで生成される（in-memory 在庫整合のための内部更新に使う）
+  constructor(private readonly books: BookRepository & Partial<MockBookRepository>) {}
 
   private histories: History[] = []
 
@@ -44,7 +46,7 @@ export class MockHistoryRepository implements HistoryRepository {
     }
 
     // サーバー側で貸出時に在庫減算されるため、Mock でも同様に反映する
-    await this.books.updateItem(Book.checkout(found.book), location)
+    this.books.internalUpdateItem?.(Book.checkout(found.book))
 
     const record = History.create(createHistoryFromBook(found.book))
     this.histories.push(record)
@@ -62,7 +64,7 @@ export class MockHistoryRepository implements HistoryRepository {
     const found = await this.books.findByIsbn(target.isbn, location)
 
     if (found.status === 'registered') {
-      await this.books.updateItem(Book.return(found.book), location)
+      this.books.internalUpdateItem?.(Book.return(found.book))
     }
 
     this.histories = this.histories.map((h) =>
