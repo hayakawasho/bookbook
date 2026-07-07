@@ -1,15 +1,14 @@
 import { Hono } from 'hono'
 
 import {
+  addBookCopy,
   bookFromRow,
   findBookByIsbn,
   findBooks,
   insertBook,
   isLocation,
-  updateBookCount,
   updateBookMetadata,
 } from '../db'
-import { validateStockTransition } from '../domain/stockTransition'
 import {
   fetchExternalBookMetadata,
   metadataPatchFromExternal,
@@ -106,47 +105,21 @@ booksRoutes.post('/', async (c) => {
   return c.json({ ok: true }, 201)
 })
 
-// PATCH /api/books/:isbn/count — 在庫数の更新（クライアント計算値をサーバーで遷移検証）
-booksRoutes.patch('/:isbn/count', async (c) => {
+// POST /api/books/:isbn/copies — 蔵書を1冊追加する（意図ベース。CAS ではなく total+1 の原子更新）
+booksRoutes.post('/:isbn/copies', async (c) => {
   const isbn = c.req.param('isbn')
-  const { availableCount, total, location } = await c.req.json<{
-    availableCount: number
-    total: number
-    location: string
-  }>()
+  const { location } = await c.req.json<{ location: string }>()
 
   if (!isLocation(location)) {
     return c.json({ error: 'unknown location' }, 400)
   }
 
-  const book = await findBookByIsbn(c.env.DB, isbn, location)
-  if (!book) {
+  const updated = await addBookCopy(c.env.DB, isbn, location)
+  if (!updated) {
     return c.json({ error: 'book not found' }, 404)
   }
 
-  const validation = validateStockTransition(
-    { available_count: book.available_count, total: book.total },
-    { availableCount, total },
-  )
-
-  if (!validation.ok) {
-    const status = validation.reason === 'invalid stock transition' ? 400 : 409
-    return c.json({ error: validation.reason }, status)
-  }
-
-  const updated = await updateBookCount(
-    c.env.DB,
-    isbn,
-    location,
-    { availableCount: book.available_count, total: book.total },
-    { availableCount, total },
-  )
-
-  if (!updated) {
-    return c.json({ error: 'conflict' }, 409)
-  }
-
-  return c.json({ ok: true })
+  return c.json({ book: bookFromRow(updated) })
 })
 
 // PATCH /api/books/:isbn/metadata — 外部 API の書誌で更新（在庫は変更しない）

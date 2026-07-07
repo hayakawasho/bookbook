@@ -12,8 +12,8 @@ async function seedBook(
     author: string | null
     publisher: string | null
     total: number
-    availableCount: number
     coverSrc: string | null
+    deletedAt: string | null
   }> = {},
 ) {
   const book = {
@@ -23,12 +23,12 @@ async function seedBook(
     author: null,
     publisher: null,
     total: 1,
-    availableCount: 1,
     coverSrc: null,
+    deletedAt: null,
     ...overrides,
   }
-  await env.DB.prepare(
-    `INSERT INTO books (isbn, location, title, author, publisher, cover_src, total, available_count) VALUES (?,?,?,?,?,?,?,?)`,
+  const res = await env.DB.prepare(
+    `INSERT INTO books (isbn, location, title, author, publisher, cover_src, total, deleted_at) VALUES (?,?,?,?,?,?,?,?)`,
   )
     .bind(
       book.isbn,
@@ -38,10 +38,10 @@ async function seedBook(
       book.publisher,
       book.coverSrc,
       book.total,
-      book.availableCount,
+      book.deletedAt,
     )
     .run()
-  return book
+  return { ...book, id: res.meta.last_row_id }
 }
 
 async function sessionCookie(email = 'user@example.com', name = 'Tester') {
@@ -105,6 +105,39 @@ describe('GET /api/books', () => {
     const body = (await res.json()) as Array<{ title: string }>
     expect(body).toHaveLength(1)
     expect(body[0].title).toBe('Readable Code')
+  })
+
+  it('在庫数(availableCount)は total から未返却の貸出数を引いた値になる', async () => {
+    const book = await seedBook({ isbn: '111', total: 3 })
+    await env.DB.prepare(
+      `INSERT INTO histories (book_id, borrower_email) VALUES (?, 'a@example.com')`,
+    )
+      .bind(book.id)
+      .run()
+    const cookie = await sessionCookie()
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/books?location=daikanyama', {
+        headers: { Cookie: cookie },
+      }),
+      env,
+    )
+    const body = (await res.json()) as Array<{ availableCount: number; total: number }>
+    expect(body[0]).toMatchObject({ availableCount: 2, total: 3 })
+  })
+
+  it('論理削除された本は一覧に出ない', async () => {
+    await seedBook({ isbn: '111', title: '削除済み', deletedAt: '2026-01-01T00:00:00.000Z' })
+    const cookie = await sessionCookie()
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/books?location=daikanyama', {
+        headers: { Cookie: cookie },
+      }),
+      env,
+    )
+    const body = (await res.json()) as Array<{ isbn: string }>
+    expect(body).toHaveLength(0)
   })
 })
 
@@ -206,10 +239,9 @@ describe('POST /api/books', () => {
 
     const row = await env.DB.prepare('SELECT * FROM books WHERE isbn = ?')
       .bind('1234567890123')
-      .first<{ title: string; total: number; available_count: number; cover_src: string }>()
+      .first<{ title: string; total: number; cover_src: string }>()
     expect(row?.title).toBe('テスト本')
     expect(row?.total).toBe(1)
-    expect(row?.available_count).toBe(1)
     expect(row?.cover_src).toBe('https://example.com/cover.jpg')
   })
 
@@ -249,48 +281,32 @@ describe('POST /api/books', () => {
   })
 })
 
-describe('PATCH /api/books/:isbn/count', () => {
-  it('妥当な貸出遷移は在庫を更新する', async () => {
-    await seedBook({ isbn: '9784003101018', total: 3, availableCount: 2 })
+describe('POST /api/books/:isbn/copies', () => {
+  it('蔵書を1冊追加すると total が増える', async () => {
+    await seedBook({ isbn: '9784003101018', total: 1 })
     const cookie = await sessionCookie()
 
     const res = await app.fetch(
-      new Request('http://localhost/api/books/9784003101018/count', {
-        method: 'PATCH',
+      new Request('http://localhost/api/books/9784003101018/copies', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Cookie: cookie },
-        body: JSON.stringify({ availableCount: 1, total: 3, location: 'daikanyama' }),
+        body: JSON.stringify({ location: 'daikanyama' }),
       }),
       env,
     )
     expect(res.status).toBe(200)
-    const row = await env.DB.prepare('SELECT available_count FROM books WHERE isbn = ?')
-      .bind('9784003101018')
-      .first<{ available_count: number }>()
-    expect(row?.available_count).toBe(1)
-  })
-
-  it('CAS 競合（他の更新が先行）は 409', async () => {
-    await seedBook({ isbn: '9784003101018', total: 1, availableCount: 0 })
-    const cookie = await sessionCookie()
-
-    const res = await app.fetch(
-      new Request('http://localhost/api/books/9784003101018/count', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Cookie: cookie },
-        body: JSON.stringify({ availableCount: -1, total: 1, location: 'daikanyama' }),
-      }),
-      env,
-    )
-    expect(res.status).toBe(409)
+    const body = (await res.json()) as { book: { total: number; availableCount: number } }
+    expect(body.book.total).toBe(2)
+    expect(body.book.availableCount).toBe(2)
   })
 
   it('存在しない ISBN は 404', async () => {
     const cookie = await sessionCookie()
     const res = await app.fetch(
-      new Request('http://localhost/api/books/0000000000000/count', {
-        method: 'PATCH',
+      new Request('http://localhost/api/books/0000000000000/copies', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Cookie: cookie },
-        body: JSON.stringify({ availableCount: 1, total: 1, location: 'daikanyama' }),
+        body: JSON.stringify({ location: 'daikanyama' }),
       }),
       env,
     )

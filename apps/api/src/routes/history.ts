@@ -63,6 +63,10 @@ historyRoutes.post('/', async (c) => {
     return c.json({ error: 'no stock available' }, 409)
   }
 
+  if (result.status === 'already-borrowed') {
+    return c.json({ error: 'already borrowed' }, 409)
+  }
+
   const record = await findHistoryWithBookById(c.env.DB, String(result.historyId))
   if (!record) {
     return c.json({ error: 'history not found after checkout' }, 502)
@@ -102,10 +106,10 @@ historyRoutes.patch('/:id', async (c) => {
     return c.json({ error: 'already returned' }, 409)
   }
 
-  await sendSlackNotification(c.env.SLACK_WEBHOOK_URL, 'return', record.history.location, {
-    title: record.book?.title ?? '',
-    author: record.book?.author ?? undefined,
-    isbn: record.history.isbn,
+  await sendSlackNotification(c.env.SLACK_WEBHOOK_URL, 'return', record.book.location, {
+    title: record.book.title,
+    author: record.book.author ?? undefined,
+    isbn: record.book.isbn,
   })
 
   return c.json({ ok: true })
