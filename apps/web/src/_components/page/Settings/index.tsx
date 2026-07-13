@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
-import { useAppState } from '../../app'
+import { useAppState, useAuth } from '../../app'
+import { Dialog } from '../../ui/Dialog'
 
 import { LocationSettingsScreen } from './_internal/LocationSettingsScreen'
 import { SettingsMainView } from './_internal/SettingsMainView'
@@ -15,7 +16,9 @@ type SettingsScreenProps = {
 
 export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const { state, dispatch } = useAppState()
+  const { currentUser, logout } = useAuth()
   const [view, setView] = useState<SettingsView>('main')
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
 
   const handleRootBack = () => {
     if (view === 'main') {
@@ -45,18 +48,34 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   }
 
   return (
-    <SettingsMainView
-      currentLocation={state.location}
-      isDarkTheme={state.themeMode === 'dark'}
-      onBack={handleRootBack}
-      onOpenLocation={() => setView('location')}
-      onOpenVolume={() => setView('volume')}
-      onToggleTheme={() =>
-        dispatch({
-          type: 'SET_THEME_MODE',
-          payload: state.themeMode === 'dark' ? 'light' : 'dark',
-        })
-      }
-    />
+    <>
+      <SettingsMainView
+        currentLocation={state.location}
+        isDarkTheme={state.themeMode === 'dark'}
+        user={currentUser}
+        onBack={handleRootBack}
+        onOpenLocation={() => setView('location')}
+        onOpenVolume={() => setView('volume')}
+        onToggleTheme={() =>
+          dispatch({
+            type: 'SET_THEME_MODE',
+            payload: state.themeMode === 'dark' ? 'light' : 'dark',
+          })
+        }
+        onLogout={() => setLogoutConfirmOpen(true)}
+      />
+      {logoutConfirmOpen && (
+        <Dialog
+          message="ログアウトしますか？"
+          confirmLabel="ログアウト"
+          cancelLabel="キャンセル"
+          onConfirm={async () => {
+            setLogoutConfirmOpen(false)
+            await logout()
+          }}
+          onCancel={() => setLogoutConfirmOpen(false)}
+        />
+      )}
+    </>
   )
 }

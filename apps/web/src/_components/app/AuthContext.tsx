@@ -6,6 +6,7 @@ const API_BASE = '/api'
 export type CurrentUser = {
   email: string
   name?: string
+  picture?: string
 }
 
 type AuthContextValue = {
@@ -39,11 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (res.ok) {
           const data = (await res.json()) as {
-            user: { email: string; name: string | null }
+            user: { email: string; name: string | null; picture?: string | null }
           }
           setCurrentUser({
             email: data.user.email,
             name: data.user.name ?? undefined,
+            picture: data.user.picture ?? undefined,
           })
         } else {
           setCurrentUser(null)

@@ -37,6 +37,13 @@ export function stubAuthFetchAuthorized(email = 'test@example.com'): void {
           }),
         } as Response)
       }
+      if (url.includes('/auth/logout')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true }),
+        } as Response)
+      }
       return Promise.reject(new Error(`unexpected fetch in test: ${url}`))
     }),
   )

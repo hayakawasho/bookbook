@@ -1,25 +1,30 @@
 import { LOCATION_MAP } from '../../../../_foundation/const'
 import { Header } from '../../../ui/Header'
-import { IconArrowNext, IconArrowPrev } from '../../../ui/icon'
+import { IconAccountFilled, IconArrowNext, IconArrowPrev } from '../../../ui/icon'
 
 import type { Location } from '../../../../_foundation/const'
+import type { CurrentUser } from '../../../app'
 
 type SettingsMainViewProps = {
   currentLocation: Location
   isDarkTheme: boolean
+  user: CurrentUser | null
   onBack: () => void
   onOpenLocation: () => void
   onOpenVolume: () => void
   onToggleTheme: () => void
+  onLogout: () => void
 }
 
 export function SettingsMainView({
   currentLocation,
   isDarkTheme,
+  user,
   onBack,
   onOpenLocation,
   onOpenVolume,
   onToggleTheme,
+  onLogout,
 }: SettingsMainViewProps) {
   return (
     <div className="min-h-full flex flex-col bg-background">
@@ -37,6 +42,25 @@ export function SettingsMainView({
         }
       />
       <div className="flex flex-col bg-surface border-b border-border">
+        {user !== null && (
+          <div className="flex items-center gap-3 min-h-[68px] px-[22px] border-b border-border">
+            {user.picture ? (
+              <img
+                src={user.picture}
+                alt=""
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="shrink-0 text-primary" aria-hidden>
+                <IconAccountFilled size={32} bg="var(--color-surface)" />
+              </span>
+            )}
+            <span className="flex min-w-0 flex-col">
+              <span className="text-base text-text truncate">{user.name ?? user.email}</span>
+              {user.name && <span className="text-xs text-text-muted truncate">{user.email}</span>}
+            </span>
+          </div>
+        )}
         <button
           type="button"
           className="flex items-center justify-between gap-4 min-h-[60px] px-[22px] bg-transparent border-0 border-b border-border cursor-pointer text-left"
@@ -91,6 +115,16 @@ export function SettingsMainView({
           </button>
         </div>
       </div>
+
+      {user !== null && (
+        <button
+          type="button"
+          className="mt-4 flex items-center min-h-[60px] px-[22px] bg-surface border-0 border-y border-border cursor-pointer text-left text-sm text-error"
+          onClick={onLogout}
+        >
+          ログアウト
+        </button>
+      )}
     </div>
   )
 }

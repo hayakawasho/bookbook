@@ -4,8 +4,10 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import {
   CSRF_COOKIE_NAME,
   CSRF_MAX_AGE_SEC,
-  isAllowedWorkspaceUser,
-  parseAllowedDomains,
+  isAllowedEmailIdentity,
+  isAllowedSessionUser,
+  isEmailAllowlistConfigured,
+  parseEmailAllowlist,
   requestUsesHttps,
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SEC,
@@ -21,6 +23,8 @@ export type AuthBindings = {
   AUTH_COOKIE_SECRET: string
   /** カンマ区切り（例: example.com,another.jp） */
   ALLOWED_EMAIL_DOMAINS: string
+  /** 個別に許可するメールアドレス（カンマ区切り） */
+  ALLOWED_EMAILS?: string
   /** ログイン後リダイレクト先パス（既定 `/`） */
   AUTH_SUCCESS_REDIRECT?: string
 }
@@ -34,6 +38,7 @@ type GoogleUserInfo = {
   email_verified?: boolean
   name?: string
   hd?: string
+  picture?: string
 }
 
 function cookieSecure(c: { req: { url: string } }): boolean {
@@ -69,9 +74,9 @@ authRoutes.get('/google/start', async (c) => {
   if (!e) {
     return c.json({ error: 'OAuth is not configured' }, 503)
   }
-  const allowed = parseAllowedDomains(e.ALLOWED_EMAIL_DOMAINS)
-  if (allowed.length === 0) {
-    return c.json({ error: 'ALLOWED_EMAIL_DOMAINS is not configured' }, 503)
+  const allowlist = parseEmailAllowlist(e)
+  if (!isEmailAllowlistConfigured(allowlist)) {
+    return c.json({ error: 'email allowlist is not configured' }, 503)
   }
 
   const state = crypto.randomUUID()
@@ -156,14 +161,14 @@ authRoutes.get('/google/callback', async (c) => {
     return c.redirect(`${successPath}?auth_error=no_email`, 302)
   }
 
-  const allowed = parseAllowedDomains(e.ALLOWED_EMAIL_DOMAINS)
-  if (!isAllowedWorkspaceUser(email, user.email_verified, user.hd, allowed)) {
+  const allowlist = parseEmailAllowlist(e)
+  if (!isAllowedEmailIdentity(email, user.email_verified, user.hd, allowlist)) {
     return c.redirect(`${successPath}?auth_error=domain_not_allowed`, 302)
   }
 
   const sessionToken = await signSession(
     e.AUTH_COOKIE_SECRET,
-    { email, name: user.name, hd: user.hd },
+    { email, name: user.name, hd: user.hd, picture: user.picture },
     SESSION_MAX_AGE_SEC,
   )
 
@@ -189,11 +194,18 @@ authRoutes.get('/me', async (c) => {
     return c.json({ error: 'unauthorized' }, 401)
   }
   const user = await verifySession(secret, raw)
-  if (!user) {
+  const allowlist = parseEmailAllowlist(c.env)
+  if (!user || !isAllowedSessionUser(user, allowlist)) {
+    deleteCookie(c, SESSION_COOKIE_NAME, { path: '/' })
     return c.json({ error: 'unauthorized' }, 401)
   }
   return c.json({
-    user: { email: user.email, name: user.name ?? null, hd: user.hd ?? null },
+    user: {
+      email: user.email,
+      name: user.name ?? null,
+      hd: user.hd ?? null,
+      picture: user.picture ?? null,
+    },
   })
 })
 

@@ -10,6 +10,7 @@ export type SessionUser = {
   email: string
   name?: string
   hd?: string
+  picture?: string
 }
 
 type SessionPayloadV1 = {
@@ -17,50 +18,82 @@ type SessionPayloadV1 = {
   email: string
   name?: string
   hd?: string
+  picture?: string
   exp: number
 }
 
-export function parseAllowedDomains(raw: string | undefined): string[] {
+function parseAllowedList(raw: string | undefined): string[] {
   if (!raw?.trim()) {
     return []
   }
 
   return raw
     .split(',')
-    .map((d) => d.trim().toLowerCase())
+    .map((value) => value.trim().toLowerCase())
     .filter(Boolean)
 }
 
-/** Workspace の hd とメールドメインのどちらかが許可リストに含まれるか */
-export function isAllowedWorkspaceUser(
+export type EmailAllowlist = {
+  domains: string[]
+  emails: string[]
+}
+
+type EmailAllowlistSource = {
+  ALLOWED_EMAIL_DOMAINS?: string
+  ALLOWED_EMAILS?: string
+}
+
+export function parseEmailAllowlist(source: EmailAllowlistSource): EmailAllowlist {
+  return {
+    domains: parseAllowedList(source.ALLOWED_EMAIL_DOMAINS),
+    emails: parseAllowedList(source.ALLOWED_EMAILS),
+  }
+}
+
+export function isEmailAllowlistConfigured(allowlist: EmailAllowlist): boolean {
+  return allowlist.domains.length > 0 || allowlist.emails.length > 0
+}
+
+/** 個別メール、Workspace の hd、またはメールドメインが許可リストに含まれるか */
+export function isAllowedEmailIdentity(
   email: string,
   emailVerified: boolean | undefined,
   hd: string | undefined,
-  allowedDomains: string[],
+  allowlist: EmailAllowlist,
 ): boolean {
-  if (allowedDomains.length === 0) {
+  if (!isEmailAllowlistConfigured(allowlist)) {
     return false
   }
 
-  if (emailVerified === false) {
+  if (emailVerified !== true) {
     return false
   }
 
-  const at = email.lastIndexOf('@')
+  const normalizedEmail = email.trim().toLowerCase()
+  const at = normalizedEmail.lastIndexOf('@')
   if (at <= 0) {
     return false
   }
 
-  const domain = email.slice(at + 1).toLowerCase()
-  if (allowedDomains.includes(domain)) {
+  if (allowlist.emails.includes(normalizedEmail)) {
     return true
   }
 
-  if (hd && allowedDomains.includes(hd.toLowerCase())) {
+  const domain = normalizedEmail.slice(at + 1)
+  if (allowlist.domains.includes(domain)) {
+    return true
+  }
+
+  if (hd && allowlist.domains.includes(hd.toLowerCase())) {
     return true
   }
 
   return false
+}
+
+/** OAuth 時に確認済みのメールアドレスを持つセッションユーザーの許可を再評価する */
+export function isAllowedSessionUser(user: SessionUser, allowlist: EmailAllowlist): boolean {
+  return isAllowedEmailIdentity(user.email, true, user.hd, allowlist)
 }
 
 function utf8(s: string): Uint8Array {
@@ -108,6 +141,7 @@ export async function signSession(
     email: user.email,
     name: user.name,
     hd: user.hd,
+    picture: user.picture,
     exp,
   }
   const payloadStr = JSON.stringify(payload)
@@ -161,7 +195,7 @@ export async function verifySession(secret: string, token: string): Promise<Sess
     return null
   }
 
-  return { email: payload.email, name: payload.name, hd: payload.hd }
+  return { email: payload.email, name: payload.name, hd: payload.hd, picture: payload.picture }
 }
 
 export function requestUsesHttps(urlStr: string): boolean {

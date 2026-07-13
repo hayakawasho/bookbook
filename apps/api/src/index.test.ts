@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:test'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { signSession } from './auth'
 import app from './index'
@@ -14,6 +14,10 @@ const AUTH_TEST_ENV = {
 
 beforeEach(() => {
   vi.restoreAllMocks()
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe('GET /api/auth/google/start', () => {
@@ -32,6 +36,38 @@ describe('GET /api/auth/google/start', () => {
     expect(loc).toContain('accounts.google.com')
     expect(loc).toContain('client_id=cid')
     expect(loc).toContain('redirect_uri=')
+  })
+})
+
+describe('GET /api/auth/google/callback', () => {
+  it('許可していないメールアドレスを拒否する', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'access-token' })))
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              email: 'other@gmail.com',
+              email_verified: true,
+            }),
+          ),
+        ),
+    )
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/auth/google/callback?code=code&state=state', {
+        headers: { Cookie: 'bookbook_oauth_state=state' },
+      }),
+      {
+        ...AUTH_TEST_ENV,
+        ALLOWED_EMAILS: 'owner@gmail.com',
+      },
+    )
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('Location')).toBe('/?auth_error=domain_not_allowed')
   })
 })
 
@@ -55,19 +91,50 @@ describe('GET /api/auth/me', () => {
     )
     expect(res.status).toBe(200)
     const body = (await res.json()) as {
-      user: { email: string; name: string | null; hd: string | null }
+      user: { email: string; name: string | null; hd: string | null; picture: string | null }
     }
     expect(body.user).toEqual({
       email: 'user@example.com',
       name: 'Tester',
       hd: 'example.com',
+      picture: null,
     })
+  })
+
+  it('許可リスト外になった有効なセッションを拒否する', async () => {
+    const token = await signSession(env.AUTH_COOKIE_SECRET, { email: 'other@gmail.com' }, 3600)
+    const res = await app.fetch(
+      new Request('http://localhost/api/auth/me', {
+        headers: { Cookie: `bookbook_session=${token}` },
+      }),
+      {
+        ...AUTH_TEST_ENV,
+        ALLOWED_EMAILS: 'owner@gmail.com',
+      },
+    )
+
+    expect(res.status).toBe(401)
   })
 })
 
 describe('セッション必須ミドルウェア', () => {
   it('/api/books はセッション Cookie なしで 401', async () => {
     const res = await app.fetch(new Request('http://localhost/api/books?location=daikanyama'), env)
+    expect(res.status).toBe(401)
+  })
+
+  it('許可リスト外になった有効なセッションで /api/books を拒否する', async () => {
+    const token = await signSession(env.AUTH_COOKIE_SECRET, { email: 'other@gmail.com' }, 3600)
+    const res = await app.fetch(
+      new Request('http://localhost/api/books?location=daikanyama', {
+        headers: { Cookie: `bookbook_session=${token}` },
+      }),
+      {
+        ...AUTH_TEST_ENV,
+        ALLOWED_EMAILS: 'owner@gmail.com',
+      },
+    )
+
     expect(res.status).toBe(401)
   })
 

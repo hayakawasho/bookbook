@@ -38,7 +38,7 @@ export function Dialog({
         >
           {message}
         </p>
-        <div className="h-px w-full bg-[rgba(223,223,223,0.6)]" />
+        <div className="h-px w-full bg-(--color-border)" />
         <div className="flex min-h-11">
           <button
             type="button"
@@ -47,10 +47,7 @@ export function Dialog({
           >
             {cancelLabel}
           </button>
-          <div
-            className="w-px shrink-0 self-stretch bg-[rgba(223,223,223,0.6)]"
-            aria-hidden="true"
-          />
+          <div className="w-px shrink-0 self-stretch bg-(--color-border)" aria-hidden="true" />
           <button
             type="button"
             className="flex min-h-11 flex-1 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-[14px] text-base font-semibold leading-[22px] tracking-[0.05em] text-[#1986e0]"

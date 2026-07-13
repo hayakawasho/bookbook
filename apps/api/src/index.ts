@@ -1,14 +1,23 @@
 import { Hono } from 'hono'
-import { getCookie } from 'hono/cookie'
+import { deleteCookie, getCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 
-import { SESSION_COOKIE_NAME, type SessionUser, verifySession } from './auth'
+import {
+  isAllowedSessionUser,
+  parseEmailAllowlist,
+  SESSION_COOKIE_NAME,
+  type SessionUser,
+  verifySession,
+} from './auth'
+import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { booksRoutes } from './routes/books'
 import { historyRoutes } from './routes/history'
+import { thumbnailsRoutes } from './routes/thumbnails'
 
 type Bindings = {
   DB: D1Database
+  THUMBNAILS: R2Bucket
   SLACK_WEBHOOK_URL: string
   GOOGLE_CLIENT_ID: string
   GOOGLE_CLIENT_SECRET: string
@@ -16,6 +25,8 @@ type Bindings = {
   AUTH_COOKIE_SECRET: string
   /** カンマ区切り（例: example.com,another.jp） */
   ALLOWED_EMAIL_DOMAINS: string
+  /** 個別に許可するメールアドレス（カンマ区切り） */
+  ALLOWED_EMAILS?: string
   /** ログイン後リダイレクト先パス（既定 `/`） */
   AUTH_SUCCESS_REDIRECT?: string
 }
@@ -45,7 +56,9 @@ app.use('/api/*', async (c, next) => {
   }
 
   const sessionUser = await verifySession(secret, raw)
-  if (!sessionUser) {
+  const allowlist = parseEmailAllowlist(c.env)
+  if (!sessionUser || !isAllowedSessionUser(sessionUser, allowlist)) {
+    deleteCookie(c, SESSION_COOKIE_NAME, { path: '/' })
     return c.json({ error: 'unauthorized' }, 401)
   }
 
@@ -54,7 +67,9 @@ app.use('/api/*', async (c, next) => {
 })
 
 app.route('/api/auth', authRoutes)
+app.route('/api/admin', adminRoutes)
 app.route('/api/books', booksRoutes)
 app.route('/api/history', historyRoutes)
+app.route('/api/thumbnails', thumbnailsRoutes)
 
 export default app

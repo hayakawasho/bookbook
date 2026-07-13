@@ -10,7 +10,7 @@ export default defineConfig({
       miniflare: {
         bindings: {
           AUTH_COOKIE_SECRET: '0123456789abcdef0123456789abcdef',
-          ALLOWED_EMAIL_DOMAINS: '',
+          ALLOWED_EMAIL_DOMAINS: 'example.com',
           SLACK_WEBHOOK_URL: '',
           GOOGLE_CLIENT_ID: '',
           GOOGLE_CLIENT_SECRET: '',
