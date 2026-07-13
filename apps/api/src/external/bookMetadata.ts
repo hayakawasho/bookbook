@@ -78,16 +78,6 @@ async function isUsableCoverUrl(src: string): Promise<boolean> {
   }
 }
 
-export function canonicalOpenBdCoverUri(isbn: string): string {
-  return `https://cover.openbd.jp/${encodeURIComponent(isbn)}.jpg`
-}
-
-function ndlThumbnailUri(isbn: string): string {
-  return `https://iss.ndl.go.jp/thumbnail/${encodeURIComponent(isbn)}`
-}
-
-// OpenBD の表紙 URL もかつては無条件信頼していたが、現在は API・CDN とも死んだ URL を返すことが
-// 多く、信頼すると後段の生きた候補（Google / NDL / Open Library）に到達できないため全候補を検証する
 export async function firstUsableCoverSrc(
   ...candidates: (string | undefined)[]
 ): Promise<string | undefined> {
@@ -109,16 +99,16 @@ export async function firstUsableCoverSrc(
   return undefined
 }
 
-/** 表紙優先: OpenBD（API + 正規 URL）→ Google → NDL → Open Library */
+// 表紙優先: OpenBD（API 応答）→ 楽天ブックス → Google → Open Library
+// OpenBD の正規 CDN URL 推測 (cover.openbd.jp) と NDL 書影 API は JPRO の規約改定に伴い 2026-03 で提供終了し常に死んでいるため候補から外す
 async function buildCoverSrc(
   isbn: string,
-  options: { openBdSrc?: string; googleSrc?: string },
+  options: { openBdSrc?: string; googleSrc?: string; rakutenSrc?: string },
 ): Promise<{ src?: string }> {
   const src = await firstUsableCoverSrc(
     options.openBdSrc,
-    canonicalOpenBdCoverUri(isbn),
+    options.rakutenSrc,
     options.googleSrc,
-    ndlThumbnailUri(isbn),
     openLibraryCoverUri(isbn),
   )
   return { src }
@@ -160,7 +150,6 @@ export function metadataPatchFromExternal(
 export async function resolveMetadataCoverSrc(
   external: ExternalBookPayload,
   existingCoverSrc: string | undefined,
-  isbn: string,
 ): Promise<MetadataCoverPatch> {
   // 自前サムネイルは外部候補との比較をせず常に維持する（外部への検証 GET も不要）
   if (isSelfThumbnailSrc(existingCoverSrc)) {
@@ -168,11 +157,7 @@ export async function resolveMetadataCoverSrc(
   }
 
   const existingSrc = normalizeCoverSrc(existingCoverSrc)
-  const resolved = await firstUsableCoverSrc(
-    external.cover?.src,
-    canonicalOpenBdCoverUri(isbn),
-    existingSrc,
-  )
+  const resolved = await firstUsableCoverSrc(external.cover?.src, existingSrc)
   if (resolved) {
     return { src: resolved }
   }
@@ -364,6 +349,29 @@ async function fetchGoogleVolume(isbn: string): Promise<ExternalBookPayload | nu
   return convertGoogleVolume(isbn, data.items[0])
 }
 
+type RakutenBooksResponse = {
+  Items?: Array<{ Item?: { largeImageUrl?: string; mediumImageUrl?: string } }>
+}
+
+export async function fetchRakutenCoverSrc(
+  isbn: string,
+  appId: string,
+): Promise<string | undefined> {
+  try {
+    const url = `https://app.rakuten.co.jp/services/api/BooksBook/Search/20170404?format=json&isbn=${encodeURIComponent(isbn)}&applicationId=${encodeURIComponent(appId)}`
+    const res = await fetch(url)
+    if (!res.ok) {
+      return undefined
+    }
+
+    const data = (await res.json()) as RakutenBooksResponse
+    const item = data.Items?.[0]?.Item
+    return item?.largeImageUrl || item?.mediumImageUrl || undefined
+  } catch {
+    return undefined
+  }
+}
+
 async function fetchOpenBd(isbn: string): Promise<ExternalBookPayload | null> {
   const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${encodeURIComponent(isbn)}`)
   if (!res.ok) {
@@ -388,17 +396,18 @@ async function mergeGoogleAndOpenBd(
   isbn: string,
   openBd: ExternalBookPayload | null,
   google: ExternalBookPayload | null,
+  rakutenSrc?: string,
 ): Promise<ExternalBookPayload | null> {
   if (!openBd && !google) {
     return null
   }
 
   if (!openBd && google) {
-    const cover = await buildCoverSrc(isbn, { googleSrc: google.cover?.src })
+    const cover = await buildCoverSrc(isbn, { googleSrc: google.cover?.src, rakutenSrc })
     return { ...google, isbn, cover }
   }
   if (openBd && !google) {
-    const cover = await buildCoverSrc(isbn, { openBdSrc: openBd.cover?.src })
+    const cover = await buildCoverSrc(isbn, { openBdSrc: openBd.cover?.src, rakutenSrc })
     return { ...openBd, isbn, cover }
   }
 
@@ -417,6 +426,7 @@ async function mergeGoogleAndOpenBd(
   const cover = await buildCoverSrc(isbn, {
     openBdSrc: openBd?.cover?.src,
     googleSrc: google?.cover?.src,
+    rakutenSrc,
   })
 
   return {
@@ -428,15 +438,23 @@ async function mergeGoogleAndOpenBd(
   }
 }
 
-export async function fetchExternalBookMetadata(isbn: string): Promise<ExternalBookPayload | null> {
-  const [google, openBd] = await Promise.all([fetchGoogleVolume(isbn), fetchOpenBd(isbn)])
-  const primary = await mergeGoogleAndOpenBd(isbn, openBd, google)
+export async function fetchExternalBookMetadata(
+  isbn: string,
+  options?: { rakutenAppId?: string },
+): Promise<ExternalBookPayload | null> {
+  const rakutenAppId = options?.rakutenAppId
+  const [google, openBd, rakutenSrc] = await Promise.all([
+    fetchGoogleVolume(isbn),
+    fetchOpenBd(isbn),
+    rakutenAppId ? fetchRakutenCoverSrc(isbn, rakutenAppId) : Promise.resolve(undefined),
+  ])
+  const primary = await mergeGoogleAndOpenBd(isbn, openBd, google, rakutenSrc)
   if (primary?.title) {
     return primary
   }
 
   const ndlRes = await fetch(
-    `https://iss.ndl.go.jp/api/opensearch?isbn=${encodeURIComponent(isbn)}&cnt=1`,
+    `https://ndlsearch.ndl.go.jp/api/opensearch?isbn=${encodeURIComponent(isbn)}&cnt=1`,
   )
   if (!ndlRes.ok) {
     return null
@@ -448,7 +466,7 @@ export async function fetchExternalBookMetadata(isbn: string): Promise<ExternalB
     return null
   }
 
-  const cover = await buildCoverSrc(isbn, {})
+  const cover = await buildCoverSrc(isbn, { rakutenSrc })
 
   return { ...ndl, cover }
 }

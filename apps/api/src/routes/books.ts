@@ -35,6 +35,7 @@ export type BooksBindings = {
   DB: D1Database
   THUMBNAILS: R2Bucket
   SLACK_WEBHOOK_URL: string
+  RAKUTEN_APP_ID?: string
 }
 
 export const booksRoutes = new Hono<{
@@ -74,7 +75,7 @@ booksRoutes.get('/:isbn', async (c) => {
     return c.json({ status: 'registered', book: bookFromRow(row) })
   }
 
-  const external = await fetchExternalBookMetadata(isbn)
+  const external = await fetchExternalBookMetadata(isbn, { rakutenAppId: c.env.RAKUTEN_APP_ID })
   if (external?.title) {
     return c.json({ status: 'external', book: external })
   }
@@ -244,12 +245,12 @@ booksRoutes.patch('/:isbn/metadata', async (c) => {
     return c.json({ error: 'book not found' }, 404)
   }
 
-  const external = await fetchExternalBookMetadata(isbn)
+  const external = await fetchExternalBookMetadata(isbn, { rakutenAppId: c.env.RAKUTEN_APP_ID })
   if (!external?.title) {
     return c.json({ error: 'external metadata not found' }, 404)
   }
 
-  const coverPatch = await resolveMetadataCoverSrc(external, existing.cover_src ?? undefined, isbn)
+  const coverPatch = await resolveMetadataCoverSrc(external, existing.cover_src ?? undefined)
   if (coverPatch.src && !isSelfThumbnailSrc(coverPatch.src)) {
     const existingSelf = await existingThumbnailSrc(c.env.THUMBNAILS, isbn)
     const ingested =

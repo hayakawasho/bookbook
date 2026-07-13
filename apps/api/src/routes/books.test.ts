@@ -64,6 +64,7 @@ async function sessionCookie(email = 'user@example.com', name = 'Tester') {
 
 beforeEach(async () => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   await env.DB.exec('DELETE FROM histories')
   await env.DB.exec('DELETE FROM books')
   const list = await env.THUMBNAILS.list()
@@ -607,20 +608,34 @@ describe('PATCH /api/books/:isbn/metadata', () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input)
         if (url.includes('googleapis.com/books')) {
-          return new Response(JSON.stringify({ totalItems: 0 }), { status: 200 })
+          return new Response(
+            JSON.stringify({
+              totalItems: 1,
+              items: [
+                {
+                  volumeInfo: {
+                    title: '新タイトル',
+                    imageLinks: { thumbnail: 'https://example.com/refetched-cover.jpg' },
+                  },
+                },
+              ],
+            }),
+            { status: 200 },
+          )
         }
         if (url.includes('api.openbd.jp')) {
+          // openBD は現在も書誌は返すが cover は常に空文字（実データで確認済み）
           return new Response(
             JSON.stringify([
               {
                 onix: { DescriptiveDetail: {}, CollateralDetail: {} },
-                summary: { title: '新タイトル', cover: `https://cover.openbd.jp/${isbn}.jpg` },
+                summary: { title: '新タイトル', cover: '' },
               },
             ]),
             { status: 200 },
           )
         }
-        if (url.startsWith('https://cover.openbd.jp/')) {
+        if (url.startsWith('https://example.com/refetched-cover.jpg')) {
           return new Response(bytes(600), {
             status: 200,
             headers: { 'Content-Type': 'image/jpeg' },
@@ -644,9 +659,13 @@ describe('PATCH /api/books/:isbn/metadata', () => {
     expect(await env.THUMBNAILS.head(thumbnailKey(isbn))).not.toBeNull()
   })
 
-  it('既にselfURLの本は外部書影に巻き戻らない', async () => {
+  it('既にselfURLの本は、外部に生きた書影があっても巻き戻らずR2も上書きされない', async () => {
     const isbn = '9784873117319'
     await seedBook({ isbn, title: '旧タイトル', coverSrc: selfThumbnailSrc(isbn) })
+    // 撮影済みの自前画像を fill=9 で seed し、外部画像（fill=1）に置き換わらないことを中身で検証する
+    await env.THUMBNAILS.put(thumbnailKey(isbn), bytes(600, 9), {
+      httpMetadata: { contentType: 'image/jpeg' },
+    })
     const cookie = await sessionCookie()
 
     vi.stubGlobal(
@@ -672,7 +691,12 @@ describe('PATCH /api/books/:isbn/metadata', () => {
         if (url.includes('api.openbd.jp')) {
           return new Response(JSON.stringify([null]), { status: 200 })
         }
-        // 書影候補の fetch 検証は self URL 判定より前に来ないよう全て失敗させる
+        if (url.startsWith('https://example.com/other-cover.jpg')) {
+          return new Response(bytes(600, 1), {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          })
+        }
         return new Response('', { status: 404 })
       }),
     )
@@ -689,6 +713,10 @@ describe('PATCH /api/books/:isbn/metadata', () => {
     const body = (await res.json()) as { book: { title: string; cover: { src?: string } } }
     expect(body.book.title).toBe('新タイトル')
     expect(body.book.cover.src).toBe(selfThumbnailSrc(isbn))
+
+    const stored = await env.THUMBNAILS.get(thumbnailKey(isbn))
+    const storedBytes = new Uint8Array((await stored?.arrayBuffer()) ?? new ArrayBuffer(0))
+    expect(storedBytes[0]).toBe(9)
   })
 })
 

@@ -18,6 +18,7 @@ async function sessionCookie(email = 'user@example.com', name = 'Tester') {
 
 beforeEach(async () => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   const list = await env.THUMBNAILS.list()
   await Promise.all(list.objects.map((obj) => env.THUMBNAILS.delete(obj.key)))
 })

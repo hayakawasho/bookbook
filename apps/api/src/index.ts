@@ -29,6 +29,8 @@ type Bindings = {
   ALLOWED_EMAILS?: string
   /** ログイン後リダイレクト先パス（既定 `/`） */
   AUTH_SUCCESS_REDIRECT?: string
+  /** 楽天ブックス書籍検索 API の applicationId（省略可: 省略時は表紙候補から楽天を除外） */
+  RAKUTEN_APP_ID?: string
 }
 
 const app = new Hono<{ Bindings: Bindings; Variables: { sessionUser: SessionUser } }>()

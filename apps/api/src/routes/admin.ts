@@ -13,6 +13,7 @@ import type { SessionUser } from '../auth'
 export type AdminBindings = {
   DB: D1Database
   THUMBNAILS: R2Bucket
+  RAKUTEN_APP_ID?: string
 }
 
 export const adminRoutes = new Hono<{
@@ -48,7 +49,7 @@ adminRoutes.post('/backfill-thumbnails', async (c) => {
       }
     }
 
-    const external = await fetchExternalBookMetadata(isbn)
+    const external = await fetchExternalBookMetadata(isbn, { rakutenAppId: c.env.RAKUTEN_APP_ID })
     const externalSrc = external?.cover?.src
     if (externalSrc) {
       const refetchedSrc = await ingestExternalCover(c.env.THUMBNAILS, isbn, externalSrc)

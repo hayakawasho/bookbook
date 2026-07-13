@@ -29,6 +29,7 @@ function fetchOk(body: Uint8Array, contentType = 'image/jpeg') {
 
 beforeEach(async () => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   const list = await env.THUMBNAILS.list()
   await Promise.all(list.objects.map((obj) => env.THUMBNAILS.delete(obj.key)))
 })

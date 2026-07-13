@@ -2,7 +2,6 @@ import { env } from 'cloudflare:test'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { signSession } from '../auth'
-import { canonicalOpenBdCoverUri } from '../external/bookMetadata'
 import app from '../index'
 import { selfThumbnailSrc, thumbnailKey } from '../thumbnails'
 
@@ -71,6 +70,7 @@ function stubFetch(handlers: Record<string, () => Response>) {
 
 beforeEach(async () => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   await env.DB.exec('DELETE FROM histories')
   await env.DB.exec('DELETE FROM books')
   const list = await env.THUMBNAILS.list()
@@ -107,17 +107,33 @@ describe('POST /api/admin/backfill-thumbnails', () => {
     const cookie = await sessionCookie()
     stubFetch({
       'example.com/dead.jpg': () => new Response('', { status: 404 }),
+      // openBD は現在も書誌は返すが cover は常に空文字（実データで確認済み）。表紙は google から来る想定
       'api.openbd.jp': () =>
         new Response(
           JSON.stringify([
             {
               onix: { DescriptiveDetail: {}, CollateralDetail: {} },
-              summary: { title: '再解決本', cover: canonicalOpenBdCoverUri(isbn) },
+              summary: { title: '再解決本', cover: '' },
             },
           ]),
           { status: 200 },
         ),
-      'cover.openbd.jp/': () =>
+      'googleapis.com/books': () =>
+        new Response(
+          JSON.stringify({
+            totalItems: 1,
+            items: [
+              {
+                volumeInfo: {
+                  title: '再解決本',
+                  imageLinks: { thumbnail: 'https://example.com/refetched.jpg' },
+                },
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+      'example.com/refetched.jpg': () =>
         new Response(bytes(600), { status: 200, headers: { 'Content-Type': 'image/jpeg' } }),
     })
 
@@ -188,6 +204,57 @@ describe('POST /api/admin/backfill-thumbnails', () => {
     expect((await coverRow(liveIsbn))?.cover_src).toBe(selfThumbnailSrc(liveIsbn))
   })
 
+  it('楽天だけが表紙を持つisbnはrefetchでselfURLに更新される（RAKUTEN_APP_ID設定時）', async () => {
+    const isbn = '9784000000105'
+    const rakutenSrc = 'https://thumbnail.image.rakuten.co.jp/@0_mall/example/cabinet/cover.jpg'
+    await seedBook(isbn, 'https://example.com/dead.jpg')
+    const cookie = await sessionCookie()
+    stubFetch({
+      'example.com/dead.jpg': () => new Response('', { status: 404 }),
+      'api.openbd.jp': () =>
+        new Response(
+          JSON.stringify([
+            {
+              onix: { DescriptiveDetail: {}, CollateralDetail: {} },
+              summary: { title: '楽天カバー本' },
+            },
+          ]),
+          { status: 200 },
+        ),
+      'app.rakuten.co.jp': () =>
+        new Response(JSON.stringify({ Items: [{ Item: { largeImageUrl: rakutenSrc } }] }), {
+          status: 200,
+        }),
+      [rakutenSrc]: () =>
+        new Response(bytes(600), { status: 200, headers: { 'Content-Type': 'image/jpeg' } }),
+    })
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/admin/backfill-thumbnails', {
+        method: 'POST',
+        headers: { Cookie: cookie },
+      }),
+      { ...env, RAKUTEN_APP_ID: 'test-app-id' },
+    )
+    const body = (await res.json()) as {
+      processed: number
+      ingested: number
+      refetched: number
+      cleared: number
+      remaining: number
+    }
+    expect(res.status).toBe(200)
+    expect(body).toMatchObject({
+      processed: 1,
+      ingested: 0,
+      refetched: 1,
+      cleared: 0,
+      remaining: 0,
+    })
+
+    expect((await coverRow(isbn))?.cover_src).toBe(selfThumbnailSrc(isbn))
+  })
+
   it('remainingはバッチサイズを超えた残り件数を正しく返す', async () => {
     const isbns = Array.from({ length: 6 }, (_, i) => `978400000020${i}`)
     for (const isbn of isbns) {
@@ -199,26 +266,40 @@ describe('POST /api/admin/backfill-thumbnails', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input)
+        // openBD は現在も書誌は返すが cover は常に空文字（実データで確認済み）。表紙は google から来る想定
         if (url.includes('api.openbd.jp')) {
-          const isbn = new URL(url).searchParams.get('isbn') ?? ''
           return new Response(
             JSON.stringify([
               {
                 onix: { DescriptiveDetail: {}, CollateralDetail: {} },
-                summary: { title: '一括本', cover: canonicalOpenBdCoverUri(isbn) },
+                summary: { title: '一括本', cover: '' },
               },
             ]),
             { status: 200 },
           )
         }
-        if (url.includes('cover.openbd.jp/')) {
+        if (url.includes('googleapis.com/books')) {
+          const isbn = new URL(url).searchParams.get('q')?.replace('isbn:', '') ?? ''
+          return new Response(
+            JSON.stringify({
+              totalItems: 1,
+              items: [
+                {
+                  volumeInfo: {
+                    title: '一括本',
+                    imageLinks: { thumbnail: `https://cover.example.com/${isbn}.jpg` },
+                  },
+                },
+              ],
+            }),
+            { status: 200 },
+          )
+        }
+        if (url.includes('cover.example.com/')) {
           return new Response(bytes(600), {
             status: 200,
             headers: { 'Content-Type': 'image/jpeg' },
           })
-        }
-        if (url.includes('googleapis.com/books')) {
-          return new Response(JSON.stringify({ totalItems: 0 }), { status: 200 })
         }
         return new Response('', { status: 404 })
       }),
