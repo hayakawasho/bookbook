@@ -98,7 +98,7 @@ export async function findBooks(db: D1Database, location: string, q: string): Pr
       .prepare(
         `SELECT ${BOOK_SELECT} FROM books b
          WHERE b.location = ?1 AND b.deleted_at IS NULL AND (b.title LIKE ?2 ESCAPE '\\' OR b.author LIKE ?2 ESCAPE '\\')
-         ORDER BY b.created_at DESC, b.id DESC LIMIT 100`,
+         ORDER BY b.created_at DESC, b.id DESC`,
       )
       .bind(location, pattern)
       .all<BookRow>()
@@ -108,7 +108,7 @@ export async function findBooks(db: D1Database, location: string, q: string): Pr
   const { results } = await db
     .prepare(
       `SELECT ${BOOK_SELECT} FROM books b WHERE b.location = ?1 AND b.deleted_at IS NULL
-       ORDER BY b.created_at DESC, b.id DESC LIMIT 100`,
+       ORDER BY b.created_at DESC, b.id DESC`,
     )
     .bind(location)
     .all<BookRow>()
@@ -228,6 +228,30 @@ export async function updateBookMetadata(
     .run()
 }
 
+/** isbn 単位（location 横断）の有効な蔵書件数。書影オブジェクトの孤児化防止・共有削除判定に使う */
+export async function countActiveBooksByIsbn(db: D1Database, isbn: string): Promise<number> {
+  const row = await db
+    .prepare(`SELECT COUNT(*) AS count FROM books WHERE isbn = ?1 AND deleted_at IS NULL`)
+    .bind(isbn)
+    .first<{ count: number }>()
+  return row?.count ?? 0
+}
+
+/** 書影は isbn 単位で R2 に1件のため、cover_src も location を問わず isbn 単位で更新する */
+export async function updateCoverSrcByIsbn(
+  db: D1Database,
+  isbn: string,
+  coverSrc: string | null,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE books SET cover_src = ?1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+       WHERE isbn = ?2 AND deleted_at IS NULL`,
+    )
+    .bind(coverSrc, isbn)
+    .run()
+}
+
 export async function findHistories(
   db: D1Database,
   borrowerEmail: string,
@@ -251,8 +275,7 @@ export async function findHistories(
        FROM histories h
        JOIN books b ON b.id = h.book_id
        WHERE ${conditions.join(' AND ')}
-       ORDER BY h.checkout_date DESC, h.id DESC
-       LIMIT 100`,
+       ORDER BY h.checkout_date DESC, h.id DESC`,
     )
     .bind(...params)
     .all<Record<string, unknown>>()
@@ -378,4 +401,90 @@ export async function returnBook(db: D1Database, historyId: string): Promise<Ret
   }
 
   return 'ok'
+}
+
+export type UndoNewBookResult = 'ok' | 'conflict'
+
+/**
+ * 新規登録の取り消し: 登録直後（total=1・履歴なし）のみ成立させる。
+ * UNIQUE(isbn, location) が再登録を塞がないよう soft delete ではなく物理削除する
+ */
+export async function undoNewBook(
+  db: D1Database,
+  isbn: string,
+  location: string,
+): Promise<UndoNewBookResult> {
+  const res = await db
+    .prepare(
+      `DELETE FROM books
+       WHERE isbn = ?1 AND location = ?2 AND deleted_at IS NULL AND total = 1
+         AND NOT EXISTS (SELECT 1 FROM histories h WHERE h.book_id = books.id)`,
+    )
+    .bind(isbn, location)
+    .run()
+
+  if ((res.meta.changes ?? 0) === 0) {
+    return 'conflict'
+  }
+
+  return 'ok'
+}
+
+export type UndoReturnResult = 'ok' | 'conflict'
+
+/** 返却の取り消し: 同一人の未返却が既にある・在庫が残っていない場合は不変条件を守るため成立させない */
+export async function undoReturnBook(db: D1Database, historyId: string): Promise<UndoReturnResult> {
+  const res = await db
+    .prepare(
+      `UPDATE histories SET return_date = NULL
+       WHERE id = ?1 AND return_date IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM histories h2
+           WHERE h2.book_id = histories.book_id
+             AND h2.borrower_email = histories.borrower_email
+             AND h2.return_date IS NULL
+         )
+         AND (SELECT b.total FROM books b WHERE b.id = histories.book_id)
+           > (SELECT COUNT(*) FROM histories h3 WHERE h3.book_id = histories.book_id AND h3.return_date IS NULL)`,
+    )
+    .bind(Number(historyId))
+    .run()
+
+  if ((res.meta.changes ?? 0) === 0) {
+    return 'conflict'
+  }
+
+  return 'ok'
+}
+
+/** バックフィル対象（cover_src 未設定 or 外部URLのまま）の isbn を limit 件取得する。1件に複数 location の cover_src があっても isbn 単位で1件にまとめる */
+export async function findIsbnsNeedingThumbnailBackfill(
+  db: D1Database,
+  limit: number,
+): Promise<{ isbn: string; coverSrc: string | null }[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT isbn, MAX(cover_src) AS cover_src FROM books
+       WHERE deleted_at IS NULL AND (cover_src IS NULL OR cover_src LIKE 'http%')
+       GROUP BY isbn
+       ORDER BY isbn
+       LIMIT ?1`,
+    )
+    .bind(limit)
+    .all<{ isbn: string; cover_src: string | null }>()
+  return results.map((row) => ({ isbn: row.isbn, coverSrc: row.cover_src }))
+}
+
+/** バックフィル対象の残件数（isbn 単位） */
+export async function countIsbnsNeedingThumbnailBackfill(db: D1Database): Promise<number> {
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS count FROM (
+         SELECT isbn FROM books
+         WHERE deleted_at IS NULL AND (cover_src IS NULL OR cover_src LIKE 'http%')
+         GROUP BY isbn
+       )`,
+    )
+    .first<{ count: number }>()
+  return row?.count ?? 0
 }

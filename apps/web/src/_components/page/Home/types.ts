@@ -1,5 +1,6 @@
 import type { Book } from '../../../_models/book'
 import type { ExternalBookInfo } from '../../../_usecases/book/ports'
+import type { ToastAction } from '../../ui/Toast'
 
 export type SheetMode =
   | { kind: 'existing'; book: Book }
@@ -20,4 +21,5 @@ export type DialogConfig = {
 export type ToastState = {
   message: string
   type: 'success' | 'error'
+  action?: ToastAction
 } | null

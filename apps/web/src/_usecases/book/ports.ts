@@ -21,4 +21,6 @@ export interface BookRepository {
   findMany(query: string, location: Location): Promise<Book[]>
   createItem(book: ExternalBookInfo, location: Location): Promise<void>
   addCopy(isbn: string, location: Location): Promise<Book>
+  deleteItem(isbn: string, location: Location): Promise<void>
+  uploadCoverImage(isbn: string, image: Blob): Promise<{ src: string }>
 }

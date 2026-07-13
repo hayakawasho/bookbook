@@ -315,3 +315,87 @@ describe('PATCH /api/history/:id（返却）', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('PATCH /api/history/:id（intent: undo-return による返却取り消し）', () => {
+  async function seedReturnedHistory(borrowerEmail = 'user@example.com', total = 2) {
+    const book = await seedBook({ total })
+    const res = await env.DB.prepare(
+      `INSERT INTO histories (book_id, borrower_email, borrower_name, return_date) VALUES (?,?,?,'2026-07-01T00:00:00.000Z')`,
+    )
+      .bind(book.id, borrowerEmail, 'Tester')
+      .run()
+    return { book, historyId: res.meta.last_row_id }
+  }
+
+  function undoRequest(historyId: number | string, cookie: string) {
+    return new Request(`http://localhost/api/history/${historyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ location: 'daikanyama', intent: 'undo-return' }),
+    })
+  }
+
+  it('返却を取り消すと未返却に戻り在庫が減る', async () => {
+    const { historyId } = await seedReturnedHistory()
+    const cookie = await sessionCookie()
+
+    const res = await app.fetch(undoRequest(historyId, cookie), env)
+    expect(res.status).toBe(200)
+
+    expect(await availableCountOf('9784003101018')).toBe(1)
+
+    const history = await env.DB.prepare('SELECT return_date FROM histories WHERE id=?')
+      .bind(historyId)
+      .first<{ return_date: string | null }>()
+    expect(history?.return_date).toBeNull()
+  })
+
+  it('未返却の履歴の取り消しは409', async () => {
+    const book = await seedBook({ total: 2 })
+    const inserted = await env.DB.prepare(
+      `INSERT INTO histories (book_id, borrower_email) VALUES (?, 'user@example.com')`,
+    )
+      .bind(book.id)
+      .run()
+    const cookie = await sessionCookie()
+
+    const res = await app.fetch(undoRequest(inserted.meta.last_row_id, cookie), env)
+    expect(res.status).toBe(409)
+  })
+
+  it('返却後に同じ本を借り直していると取り消せず409（二重貸出を防ぐ）', async () => {
+    const { book, historyId } = await seedReturnedHistory()
+    await env.DB.prepare(
+      `INSERT INTO histories (book_id, borrower_email) VALUES (?, 'user@example.com')`,
+    )
+      .bind(book.id)
+      .run()
+    const cookie = await sessionCookie()
+
+    const res = await app.fetch(undoRequest(historyId, cookie), env)
+    expect(res.status).toBe(409)
+  })
+
+  it('返却後に在庫が埋まっていると取り消せず409（在庫は負にならない）', async () => {
+    const { book, historyId } = await seedReturnedHistory('user@example.com', 1)
+    await env.DB.prepare(
+      `INSERT INTO histories (book_id, borrower_email) VALUES (?, 'other@example.com')`,
+    )
+      .bind(book.id)
+      .run()
+    const cookie = await sessionCookie()
+
+    const res = await app.fetch(undoRequest(historyId, cookie), env)
+    expect(res.status).toBe(409)
+
+    expect(await availableCountOf('9784003101018')).toBe(0)
+  })
+
+  it('他人の履歴の取り消しは403', async () => {
+    const { historyId } = await seedReturnedHistory('other@example.com')
+    const cookie = await sessionCookie('user@example.com')
+
+    const res = await app.fetch(undoRequest(historyId, cookie), env)
+    expect(res.status).toBe(403)
+  })
+})

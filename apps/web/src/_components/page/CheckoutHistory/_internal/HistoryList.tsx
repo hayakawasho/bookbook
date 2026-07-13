@@ -19,7 +19,7 @@ function formatCheckoutDate(date: Date) {
 }
 
 function CheckoutDateMeta({ date }: { date: Date }) {
-  return <p className="m-0 mb-1 text-xs leading-[17px]">貸出日：{formatCheckoutDate(date)}</p>
+  return <p className="m-0 mb-1 text-xs">貸出日：{formatCheckoutDate(date)}</p>
 }
 
 function HistoryRow({ history, action }: { history: History; action?: ReactNode }) {

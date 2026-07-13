@@ -12,6 +12,8 @@ type CreateBorrowAfterRegisterDialogOptions = {
   clearScanSession: () => void
   handleSheetClose: () => void
   setDialogConfig: (config: DialogConfig | null) => void
+  playCheckoutSound: () => void
+  unlockCheckoutSound: () => void
 }
 
 export function createBorrowAfterRegisterDialog(
@@ -25,6 +27,8 @@ export function createBorrowAfterRegisterDialog(
     clearScanSession,
     handleSheetClose,
     setDialogConfig,
+    playCheckoutSound,
+    unlockCheckoutSound,
   } = options
 
   return {
@@ -34,6 +38,7 @@ export function createBorrowAfterRegisterDialog(
     width: 287,
     onConfirm: async () => {
       setDialogConfig(null)
+      unlockCheckoutSound()
       const result = await usecase.checkoutBook(book, location)
 
       if (result.err) {
@@ -42,6 +47,7 @@ export function createBorrowAfterRegisterDialog(
       }
 
       clearScanSession()
+      playCheckoutSound()
       showToast('貸出が完了しました', 'success')
     },
     onCancel: () => {

@@ -4,8 +4,10 @@ import { clamp } from '@bookbook/utils'
 
 import {
   loadStoredLocation,
+  loadStoredVolume,
   persistLocation,
   persistThemeMode,
+  persistVolume,
   resolveInitialThemeMode,
 } from '../../_foundation/appPreferencesStorage'
 
@@ -59,6 +61,7 @@ function initAppState(base: AppState): AppState {
   return {
     ...base,
     location: loadStoredLocation() ?? base.location,
+    volume: loadStoredVolume() ?? base.volume,
     themeMode: resolveInitialThemeMode(),
   }
 }
@@ -70,6 +73,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     persistLocation(state.location)
   }, [state.location])
+
+  useEffect(() => {
+    persistVolume(state.volume)
+  }, [state.volume])
 
   useEffect(() => {
     if (skipThemePersistOnMount.current) {

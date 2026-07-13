@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+
 import { Book } from '../../../../_models/book'
 import { BookCover } from '../../../feature/book/BookCover'
 import { BookItem, BookStockSummaryLines } from '../../../feature/book/BookItem'
@@ -13,7 +15,9 @@ type HomeExistingBookSheetProps = {
 
 type HomeExternalBookSheetProps = {
   book: ExternalBookInfo
+  coverPreviewSrc?: string
   onAddBook: (book: ExternalBookInfo) => void | Promise<void>
+  onSelectCoverPhoto?: (file: File) => void
 }
 
 export function HomeExistingBookSheet({ book, onAddCopy, onCheckout }: HomeExistingBookSheetProps) {
@@ -59,12 +63,53 @@ export function HomeExistingBookSheet({ book, onAddCopy, onCheckout }: HomeExist
   )
 }
 
-export function HomeExternalBookSheet({ book, onAddBook }: HomeExternalBookSheetProps) {
+export function HomeExternalBookSheet({
+  book,
+  coverPreviewSrc,
+  onAddBook,
+  onSelectCoverPhoto,
+}: HomeExternalBookSheetProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const showCoverCapture = !book.cover.src && Boolean(onSelectCoverPhoto)
+  const displayBook = coverPreviewSrc ? { ...book, cover: { src: coverPreviewSrc } } : book
+
   return (
     <>
       <div className="flex gap-[29px] items-start px-[22px] pt-0 pb-2">
-        <BookItem book={book} />
+        <BookItem
+          book={displayBook}
+          action={
+            showCoverCapture ? (
+              <button
+                type="button"
+                className="min-h-[40px] px-2.5 py-2 bg-surface text-text text-xs font-semibold tracking-tight cursor-pointer inline-flex items-center gap-1.5"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                表紙を撮影
+              </button>
+            ) : undefined
+          }
+        />
       </div>
+      {showCoverCapture && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          aria-label="表紙を撮影"
+          className="sr-only"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+
+            if (file) {
+              onSelectCoverPhoto?.(file)
+            }
+
+            e.target.value = ''
+          }}
+        />
+      )}
       <div className="px-[22px] pb-8 pt-5 absolute bottom-0 w-full">
         <button
           type="button"

@@ -5,6 +5,8 @@ export const APP_PREFERENCES_THEME_STORAGE_KEY = 'bookbook.theme'
 
 export const APP_PREFERENCES_LOCATION_STORAGE_KEY = 'bookbook.location'
 
+export const APP_PREFERENCES_VOLUME_STORAGE_KEY = 'bookbook.volume'
+
 export type StoredThemeMode = 'light' | 'dark'
 
 function safeGetLocalStorageItem(key: string): string | null {
@@ -37,6 +39,18 @@ export function readThemeModeFromRaw(raw: string | null): StoredThemeMode | null
   return null
 }
 
+export function readVolumeFromRaw(raw: string | null): number | null {
+  if (raw === null) {
+    return null
+  }
+  const value = Number(raw)
+
+  if (Number.isNaN(value)) {
+    return null
+  }
+  return Math.min(Math.max(value, 0), 100)
+}
+
 export function resolveSystemThemeMode(): StoredThemeMode {
   if (typeof window === 'undefined') {
     return 'light'
@@ -56,6 +70,10 @@ export function loadStoredThemeMode(): StoredThemeMode | null {
   return readThemeModeFromRaw(safeGetLocalStorageItem(APP_PREFERENCES_THEME_STORAGE_KEY))
 }
 
+export function loadStoredVolume(): number | null {
+  return readVolumeFromRaw(safeGetLocalStorageItem(APP_PREFERENCES_VOLUME_STORAGE_KEY))
+}
+
 /** Effective theme on load: explicit stored value, otherwise OS preference */
 export function resolveInitialThemeMode(): StoredThemeMode {
   return loadStoredThemeMode() ?? resolveSystemThemeMode()
@@ -67,4 +85,8 @@ export function persistLocation(location: Location): void {
 
 export function persistThemeMode(mode: StoredThemeMode): void {
   safeSetLocalStorageItem(APP_PREFERENCES_THEME_STORAGE_KEY, mode)
+}
+
+export function persistVolume(volume: number): void {
+  safeSetLocalStorageItem(APP_PREFERENCES_VOLUME_STORAGE_KEY, String(volume))
 }

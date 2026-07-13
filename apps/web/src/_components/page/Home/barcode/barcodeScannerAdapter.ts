@@ -10,7 +10,6 @@ export interface BarcodeScannerAdapter {
   isSupported(): boolean
   start(options: ScanOptions): void
   stop(): void
-  scanFile(file: File): Promise<string | null>
 }
 
 export class MockBarcodeScannerAdapter implements BarcodeScannerAdapter {
@@ -21,8 +20,4 @@ export class MockBarcodeScannerAdapter implements BarcodeScannerAdapter {
   start(_options: ScanOptions): void {}
 
   stop(): void {}
-
-  scanFile(_file: File): Promise<string | null> {
-    return Promise.resolve(null)
-  }
 }

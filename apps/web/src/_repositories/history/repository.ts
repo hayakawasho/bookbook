@@ -71,4 +71,25 @@ export class MockHistoryRepository implements HistoryRepository {
       String(h.id) === historyId ? History.markReturned(h, new Date()) : h,
     )
   }
+
+  async undoReturnItem(historyId: string, location: Location): Promise<void> {
+    const target = this.histories.find((h) => String(h.id) === historyId)
+
+    if (!target || !History.isReturned(target)) {
+      return
+    }
+
+    // サーバー側で取り消し時に在庫が再び減るため、Mock でも同様に反映する
+    const found = await this.books.findByIsbn(target.isbn, location)
+
+    if (found.status === 'registered') {
+      this.books.internalUpdateItem?.(Book.checkout(found.book))
+    }
+
+    this.histories = this.histories.map((h) =>
+      String(h.id) === historyId
+        ? History.create({ ...h, isDone: false, returnDate: undefined })
+        : h,
+    )
+  }
 }

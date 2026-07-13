@@ -17,12 +17,10 @@ export function BookStockSummaryLines({ book }: { book: Book }) {
 
   return (
     <div className="flex flex-col gap-1">
-      <p
-        className={`m-0 text-xs leading-[17px] font-bold ${hasAvailableStock ? 'text-success' : 'text-error'}`}
-      >
+      <p className={`m-0 text-xs font-bold ${hasAvailableStock ? 'text-success' : 'text-error'}`}>
         {hasAvailableStock ? '貸出可：〇' : '貸出中：×'}
       </p>
-      <p className="m-0 text-xs leading-[17px] text-text-muted">総冊数：{book.total}</p>
+      <p className="m-0 text-xs text-text-muted">総冊数：{book.total}</p>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import {
   historyFromRow,
   isLocation,
   returnBook,
+  undoReturnBook,
 } from '../db'
 import { sendSlackNotification } from '../external/slack'
 
@@ -78,7 +79,13 @@ historyRoutes.post('/', async (c) => {
     c.env.SLACK_WEBHOOK_URL,
     'checkout',
     location,
-    { title: json.title, author: json.author, isbn },
+    {
+      title: json.title,
+      author: json.author,
+      publisher: json.publisher,
+      description: json.description,
+      coverSrc: json.cover.src,
+    },
     sessionUser,
   )
 
@@ -101,6 +108,17 @@ historyRoutes.patch('/:id', async (c) => {
     return c.json({ error: 'forbidden' }, 403)
   }
 
+  const body = await c.req.json<{ intent?: string }>().catch(() => ({}) as { intent?: string })
+
+  // 返却の取り消し。直前の返却通知を打ち消す連投を避けるため Slack へは通知しない
+  if (body.intent === 'undo-return') {
+    const result = await undoReturnBook(c.env.DB, id)
+    if (result === 'conflict') {
+      return c.json({ error: 'cannot undo return' }, 409)
+    }
+    return c.json({ ok: true })
+  }
+
   const result = await returnBook(c.env.DB, id)
   if (result === 'already-returned') {
     return c.json({ error: 'already returned' }, 409)
@@ -109,7 +127,9 @@ historyRoutes.patch('/:id', async (c) => {
   await sendSlackNotification(c.env.SLACK_WEBHOOK_URL, 'return', record.book.location, {
     title: record.book.title,
     author: record.book.author ?? undefined,
-    isbn: record.book.isbn,
+    publisher: record.book.publisher ?? undefined,
+    description: record.book.description ?? undefined,
+    coverSrc: record.book.cover_src ?? undefined,
   })
 
   return c.json({ ok: true })

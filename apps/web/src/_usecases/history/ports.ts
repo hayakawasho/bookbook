@@ -10,4 +10,5 @@ export interface HistoryRepository {
   findMany(query: HistoryQuery, location: Location): Promise<History[]>
   createItem(isbn: string, location: Location): Promise<History>
   returnItem(historyId: string, location: Location): Promise<void>
+  undoReturnItem(historyId: string, location: Location): Promise<void>
 }

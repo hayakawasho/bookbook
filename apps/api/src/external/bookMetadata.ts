@@ -1,5 +1,7 @@
 import { XMLParser } from 'fast-xml-parser'
 
+import { isSelfThumbnailSrc } from '../thumbnails'
+
 /** 外部書誌（クライアントの ExternalBookInfo に対応。日付は JSON のため ISO 文字列） */
 export type ExternalBookPayload = {
   isbn: string
@@ -98,6 +100,11 @@ export async function firstUsableCoverSrc(
       return src
     }
 
+    // R2 保存済みの自前サムネイルは相対パスのため fetch 検証できない。無条件に信頼する
+    if (isSelfThumbnailSrc(src)) {
+      return src
+    }
+
     if (await isUsableCoverUrl(src)) {
       return src
     }
@@ -158,6 +165,12 @@ export async function resolveMetadataCoverSrc(
   existingCoverSrc: string | undefined,
   isbn: string,
 ): Promise<MetadataCoverPatch> {
+  // canonicalOpenBdCoverUri は実在確認なしに無条件で信頼されるため、既存が self URL のときは
+  // 候補としてこれより後段に置いても選ばれない。自前サムネイルは無条件で維持する
+  if (isSelfThumbnailSrc(existingCoverSrc)) {
+    return {}
+  }
+
   const existingSrc = normalizeCoverSrc(existingCoverSrc)
   const resolved = await firstUsableCoverSrc(
     external.cover?.src,

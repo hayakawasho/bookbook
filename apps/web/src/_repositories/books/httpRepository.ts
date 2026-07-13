@@ -88,4 +88,32 @@ export class HttpBookRepository implements BookRepository {
     const { book } = (await res.json()) as { book: BookDto }
     return Book.create(toBookInput(book))
   }
+
+  async deleteItem(isbn: string, location: Location): Promise<void> {
+    const params = new URLSearchParams({ location })
+    const res = await fetch(`${this.baseUrl}/books/${isbn}?${params}`, {
+      credentials: 'include',
+      method: 'DELETE',
+    })
+
+    if (!res.ok) {
+      throw new Error(`DELETE /books/${isbn} failed: ${res.status}`)
+    }
+  }
+
+  async uploadCoverImage(isbn: string, image: Blob): Promise<{ src: string }> {
+    const res = await fetch(`${this.baseUrl}/books/${isbn}/thumbnail`, {
+      credentials: 'include',
+      method: 'PUT',
+      headers: { 'Content-Type': image.type || 'image/jpeg' },
+      body: image,
+    })
+
+    if (!res.ok) {
+      throw new Error(`PUT /books/${isbn}/thumbnail failed: ${res.status}`)
+    }
+
+    const { cover } = (await res.json()) as { cover: { src: string } }
+    return cover
+  }
 }

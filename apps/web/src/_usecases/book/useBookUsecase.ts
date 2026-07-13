@@ -9,6 +9,9 @@ import {
   checkoutBook as runCheckoutBook,
   restockBook as runRestockBook,
   returnBook as runReturnBook,
+  undoNewBook as runUndoNewBook,
+  undoReturnBook as runUndoReturnBook,
+  uploadBookCover as runUploadBookCover,
 } from './commands'
 
 import type { UseCaseResult } from '@bookbook/utils'
@@ -33,6 +36,9 @@ export function useBookUsecase() {
         location: Location,
       ): Promise<UseCaseResult<Book, Error>> => runAddNewBook(deps, book, location),
 
+      undoNewBook: (book: Book, location: Location): Promise<UseCaseResult<true, Error>> =>
+        runUndoNewBook(deps, book, location),
+
       restockBook: (book: Book, location: Location): Promise<UseCaseResult<true, Error>> =>
         runRestockBook(deps, book, location),
 
@@ -44,6 +50,15 @@ export function useBookUsecase() {
         book: Book,
         location: Location,
       ): Promise<UseCaseResult<true, Error>> => runReturnBook(deps, historyId, book, location),
+
+      undoReturnBook: (
+        historyId: string,
+        book: Book,
+        location: Location,
+      ): Promise<UseCaseResult<true, Error>> => runUndoReturnBook(deps, historyId, book, location),
+
+      uploadBookCover: (book: Book, image: Blob): Promise<UseCaseResult<Book, Error>> =>
+        runUploadBookCover(deps, book, image),
     }
   }, [bookRepo, historyRepo, mutator])
 }

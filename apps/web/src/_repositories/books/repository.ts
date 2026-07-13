@@ -66,6 +66,13 @@ const EXTERNAL_BOOKS: Record<string, ExternalBookInfo> = {
     publisher: '翔泳社',
     cover: {},
   },
+  '9784798163214': {
+    isbn: '9784798163214',
+    title: 'エンジニアリング組織論への招待',
+    author: '広木大地',
+    publisher: '技術評論社',
+    cover: { src: 'https://example.com/covers/9784798163214.jpg' },
+  },
 }
 
 function matchesBookSearchQuery(book: Book, query: string): boolean {
@@ -133,6 +140,31 @@ export class MockBookRepository implements BookRepository {
     const updated = Book.addStock(target)
     this.internalUpdateItem(updated)
     return Promise.resolve(updated)
+  }
+
+  deleteItem(isbn: string, _location: Location): Promise<void> {
+    const target = this.books.find((b) => String(b.id) === isbn)
+
+    // サーバー側と同じく登録直後（total=1・貸出なし）のみ取り消せる
+    if (!target || target.total !== 1 || target.availableCount !== 1) {
+      return Promise.reject(new Error(`MockBookRepository: cannot undo registration for ${isbn}`))
+    }
+
+    this.books = this.books.filter((b) => String(b.id) !== isbn)
+    return Promise.resolve()
+  }
+
+  uploadCoverImage(isbn: string, image: Blob): Promise<{ src: string }> {
+    const target = this.books.find((b) => String(b.id) === isbn)
+
+    if (!target) {
+      return Promise.reject(new Error(`MockBookRepository: book not found for isbn=${isbn}`))
+    }
+
+    const src = URL.createObjectURL(image)
+    this.internalUpdateItem(Book.create({ ...target, cover: { src } }))
+
+    return Promise.resolve({ src })
   }
 
   // MockHistoryRepository が貸出/返却時の在庫増減に使う port 外の内部更新手段

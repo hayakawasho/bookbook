@@ -1,3 +1,7 @@
+import { useCallback, useState } from 'react'
+
+import { History } from '../../../_models/history'
+import { useBorrowingItems, useHistoryItems } from '../../../_usecases/history'
 import { Header } from '../../ui/Header'
 import { IconCog } from '../../ui/icon'
 import { Toast } from '../../ui/Toast'
@@ -5,20 +9,27 @@ import { SettingsScreen } from '../Settings'
 
 import { HistoryList } from './_internal/HistoryList'
 import { HistorySubTabs } from './_internal/HistorySubTabs'
-import { useCheckoutHistoryScreen } from './useCheckoutHistoryScreen'
+import { useReturnBook } from './hooks/useReturnBook'
+
+import type { HistorySubTab, ToastState } from './types'
 
 export function CheckoutHistoryScreen() {
-  const {
-    borrowing,
-    handleReturn,
-    historySubTab,
-    returned,
-    setHistorySubTab,
-    setSettingsOpen,
-    setToast,
-    settingsOpen,
-    toast,
-  } = useCheckoutHistoryScreen()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [historySubTab, setHistorySubTab] = useState<HistorySubTab>('borrowing')
+  const [toast, setToast] = useState<ToastState>(null)
+
+  const showToast = useCallback(
+    (message: string, type: 'success' | 'error', action?: NonNullable<ToastState>['action']) => {
+      setToast({ message, type, action })
+    },
+    [],
+  )
+
+  const { data: borrowing = [] } = useBorrowingItems()
+  const { data: historyData = [] } = useHistoryItems()
+  const returned = historyData.filter((h) => History.isReturned(h))
+
+  const handleReturn = useReturnBook({ showToast })
 
   if (settingsOpen) {
     return <SettingsScreen onBack={() => setSettingsOpen(false)} />
@@ -52,7 +63,12 @@ export function CheckoutHistoryScreen() {
       />
 
       {toast && (
-        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          action={toast.action}
+          onDismiss={() => setToast(null)}
+        />
       )}
     </div>
   )

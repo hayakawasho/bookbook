@@ -6,7 +6,7 @@ type HistorySubTabsProps = {
 }
 
 const HISTORY_SUB_TAB_BASE_CLASS =
-  'flex-1 min-h-[56px] bg-transparent border-0 border-b-2 text-sm leading-[18px] cursor-pointer py-2'
+  'flex-1 min-h-[56px] bg-transparent border-0 border-b-2 text-sm cursor-pointer py-2'
 
 function historySubTabButtonClass(active: boolean) {
   if (active) {

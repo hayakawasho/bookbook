@@ -53,4 +53,17 @@ export class HttpHistoryRepository implements HistoryRepository {
       throw new Error(`PATCH /history/${historyId} failed: ${res.status}`)
     }
   }
+
+  async undoReturnItem(historyId: string, location: Location): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/history/${historyId}`, {
+      credentials: 'include',
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location, intent: 'undo-return' }),
+    })
+
+    if (!res.ok) {
+      throw new Error(`PATCH /history/${historyId} (undo-return) failed: ${res.status}`)
+    }
+  }
 }
