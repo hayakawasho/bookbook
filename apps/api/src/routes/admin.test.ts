@@ -22,9 +22,10 @@ async function sessionCookie(email = 'user@example.com', name = 'Tester') {
   return `bookbook_session=${token}`
 }
 
-async function backfill(cookie: string) {
+async function backfill(cookie: string, after?: string) {
+  const query = after ? `?after=${encodeURIComponent(after)}` : ''
   const res = await app.fetch(
-    new Request('http://localhost/api/admin/backfill-thumbnails', {
+    new Request(`http://localhost/api/admin/backfill-thumbnails${query}`, {
       method: 'POST',
       headers: { Cookie: cookie },
     }),
@@ -36,6 +37,8 @@ async function backfill(cookie: string) {
     refetched: number
     cleared: number
     remaining: number
+    nextCursor: string | null
+    done: boolean
   }
   return { res, body }
 }
@@ -185,22 +188,57 @@ describe('POST /api/admin/backfill-thumbnails', () => {
     expect((await coverRow(isbn))?.cover_src).toBe(selfThumbnailSrc(isbn))
   })
 
-  it('解決不能なNULL行がバッチを占有せず外部URL行を先に処理する', async () => {
-    const nullIsbns = Array.from({ length: 5 }, (_, i) => `978400000030${i}`)
+  it('解決不能なNULL行があってもカーソルで後続ISBNへ進める', async () => {
+    const nullIsbns = Array.from({ length: 3 }, (_, i) => `978400000030${i}`)
     for (const isbn of nullIsbns) {
       await seedBook(isbn, null)
     }
-    const liveIsbn = '9784999999999'
-    await seedBook(liveIsbn, 'https://example.com/live.jpg')
+    const liveIsbn = '9784000000303'
+    await seedBook(liveIsbn, null)
     const cookie = await sessionCookie()
-    stubFetch({
-      'example.com/live.jpg': () =>
-        new Response(bytes(600), { status: 200, headers: { 'Content-Type': 'image/jpeg' } }),
-    })
+    const coverSrc = 'https://example.com/live.jpg'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('api.openbd.jp')) {
+          return new Response(JSON.stringify([null]), { status: 200 })
+        }
+        if (url.includes('googleapis.com/books')) {
+          const isbn = new URL(url).searchParams.get('q')?.replace('isbn:', '')
+          return new Response(
+            JSON.stringify(
+              isbn === liveIsbn
+                ? {
+                    totalItems: 1,
+                    items: [
+                      { volumeInfo: { title: '後続本', imageLinks: { thumbnail: coverSrc } } },
+                    ],
+                  }
+                : { totalItems: 0 },
+            ),
+            { status: 200 },
+          )
+        }
+        if (url === coverSrc) {
+          return new Response(bytes(600), {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          })
+        }
+        return new Response('', { status: 404 })
+      }),
+    )
 
-    const { res, body } = await backfill(cookie)
-    expect(res.status).toBe(200)
-    expect(body.ingested).toBe(1)
+    const first = await backfill(cookie)
+    expect(first.res.status).toBe(200)
+    expect(first.body.nextCursor).toBe(nullIsbns[2])
+    expect(first.body.done).toBe(false)
+
+    const second = await backfill(cookie, first.body.nextCursor ?? undefined)
+    expect(second.res.status).toBe(200)
+    expect(second.body.refetched).toBe(1)
+    expect(second.body.done).toBe(true)
     expect((await coverRow(liveIsbn))?.cover_src).toBe(selfThumbnailSrc(liveIsbn))
   })
 

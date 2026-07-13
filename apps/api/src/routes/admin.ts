@@ -28,7 +28,8 @@ const BACKFILL_BATCH_SIZE = 3
 
 // POST /api/admin/backfill-thumbnails — バックフィル完了後に削除する一時ルート
 adminRoutes.post('/backfill-thumbnails', async (c) => {
-  const targets = await findIsbnsNeedingThumbnailBackfill(c.env.DB, BACKFILL_BATCH_SIZE)
+  const after = c.req.query('after') || undefined
+  const targets = await findIsbnsNeedingThumbnailBackfill(c.env.DB, BACKFILL_BATCH_SIZE, after)
 
   let ingested = 0
   let refetched = 0
@@ -73,6 +74,7 @@ adminRoutes.post('/backfill-thumbnails', async (c) => {
   }
 
   const remaining = await countIsbnsNeedingThumbnailBackfill(c.env.DB)
+  const nextCursor = targets.at(-1)?.isbn ?? null
 
   return c.json({
     processed: targets.length,
@@ -80,5 +82,7 @@ adminRoutes.post('/backfill-thumbnails', async (c) => {
     refetched,
     cleared,
     remaining,
+    nextCursor,
+    done: targets.length < BACKFILL_BATCH_SIZE,
   })
 })

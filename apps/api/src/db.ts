@@ -457,20 +457,22 @@ export async function undoReturnBook(db: D1Database, historyId: string): Promise
   return 'ok'
 }
 
-/** バックフィル対象（cover_src 未設定 or 外部URLのまま）の isbn を limit 件取得する。1件に複数 location の cover_src があっても isbn 単位で1件にまとめる。解決不能な NULL 行がバッチ先頭を占有し続けないよう外部 URL 行を先に返す */
+/** バックフィル対象（cover_src 未設定 or 外部URLのまま）の isbn をカーソル以降から limit 件取得する。1件に複数 location の cover_src があっても isbn 単位で1件にまとめる */
 export async function findIsbnsNeedingThumbnailBackfill(
   db: D1Database,
   limit: number,
+  after?: string,
 ): Promise<{ isbn: string; coverSrc: string | null }[]> {
   const { results } = await db
     .prepare(
       `SELECT isbn, MAX(cover_src) AS cover_src FROM books
        WHERE deleted_at IS NULL AND (cover_src IS NULL OR cover_src LIKE 'http%')
+         AND (?2 IS NULL OR isbn > ?2)
        GROUP BY isbn
-       ORDER BY MAX(cover_src) IS NULL, isbn
+       ORDER BY isbn
        LIMIT ?1`,
     )
-    .bind(limit)
+    .bind(limit, after ?? null)
     .all<{ isbn: string; cover_src: string | null }>()
   return results.map((row) => ({ isbn: row.isbn, coverSrc: row.cover_src }))
 }
