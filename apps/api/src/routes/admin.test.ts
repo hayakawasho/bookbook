@@ -169,6 +169,25 @@ describe('POST /api/admin/backfill-thumbnails', () => {
     expect((await coverRow(isbn))?.cover_src).toBe(selfThumbnailSrc(isbn))
   })
 
+  it('解決不能なNULL行がバッチを占有せず外部URL行を先に処理する', async () => {
+    const nullIsbns = Array.from({ length: 5 }, (_, i) => `978400000030${i}`)
+    for (const isbn of nullIsbns) {
+      await seedBook(isbn, null)
+    }
+    const liveIsbn = '9784999999999'
+    await seedBook(liveIsbn, 'https://example.com/live.jpg')
+    const cookie = await sessionCookie()
+    stubFetch({
+      'example.com/live.jpg': () =>
+        new Response(bytes(600), { status: 200, headers: { 'Content-Type': 'image/jpeg' } }),
+    })
+
+    const { res, body } = await backfill(cookie)
+    expect(res.status).toBe(200)
+    expect(body.ingested).toBe(1)
+    expect((await coverRow(liveIsbn))?.cover_src).toBe(selfThumbnailSrc(liveIsbn))
+  })
+
   it('remainingはバッチサイズを超えた残り件数を正しく返す', async () => {
     const isbns = Array.from({ length: 6 }, (_, i) => `978400000020${i}`)
     for (const isbn of isbns) {
@@ -206,11 +225,11 @@ describe('POST /api/admin/backfill-thumbnails', () => {
     )
 
     const first = await backfill(cookie)
-    expect(first.body.processed).toBe(5)
-    expect(first.body.remaining).toBe(1)
+    expect(first.body.processed).toBe(3)
+    expect(first.body.remaining).toBe(3)
 
     const second = await backfill(cookie)
-    expect(second.body.processed).toBe(1)
+    expect(second.body.processed).toBe(3)
     expect(second.body.remaining).toBe(0)
   })
 })

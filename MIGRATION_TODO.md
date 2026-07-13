@@ -27,7 +27,13 @@ cd apps/api && npx wrangler d1 execute bookbook-db --remote --file=../../seed.sq
 - 件数サマリ（stderr）を microCMS 管理画面の件数と突き合わせる
 - **seed.sql は借り手メールを含むためコミットしない**。本番投入が終わるまで手元に保管し、その後削除する
 
-### 2. テスト環境へデプロイ
+### 2. R2 バケット作成（サムネイル用）
+
+```sh
+cd apps/api && npx wrangler r2 bucket create bookbook-thumbnails
+```
+
+### 3. テスト環境へデプロイ
 
 テスト用アカウントの Worker に必要なシークレット（SLACK_WEBHOOK_URL / GOOGLE_* / AUTH_COOKIE_SECRET / ALLOWED_EMAIL_DOMAINS / ALLOWED_EMAILS）を登録する。`npx wrangler secret list` で登録名を確認し、不足分は `npx wrangler secret put <KEY>` で登録する。
 
@@ -35,12 +41,26 @@ cd apps/api && npx wrangler d1 execute bookbook-db --remote --file=../../seed.sq
 make deploy-api
 ```
 
-### 3. テスト環境で動作確認
+### 4. サムネイルのバックフィル（seed 投入・デプロイ後）
+
+既存行の `cover_src`（外部 URL / NULL）を R2 取り込みに移行する。ログイン済みブラウザの DevTools コンソールから `remaining` が減らなくなるまで繰り返し実行:
+
+```js
+await (await fetch('/api/admin/backfill-thumbnails', { method: 'POST', credentials: 'include' })).json()
+// => { processed, ingested, refetched, cleared, remaining }
+```
+
+- 1 回で 5 isbn ずつ処理（Workers の subrequest 上限対策）
+- `cleared` は「外部 API にも画像がない本」。NULL のまま残り no_image 表示になる（remaining はこの分だけ 0 にならず残る）
+- テスト・本番の両環境で完了したら、一時ルート `apps/api/src/routes/admin.ts` を削除する
+
+### 5. テスト環境で動作確認
 
 1. ログイン → 本棚に移行済みの蔵書が表示される
 2. 貸出 → Slack 通知（借り手名入り）+ 履歴反映
 3. 返却 → 在庫復帰 + Slack 通知
 4. （任意）在庫 1 に連続貸出 → 2 回目が弾かれる
+5. 書影が `/api/thumbnails/{isbn}` で表示される（バックフィル後）。外部書誌に画像がない本の新規登録で「表紙を撮影」が使える
 
 ## 本番環境（別の Cloudflare アカウント）
 
@@ -48,14 +68,15 @@ wrangler.jsonc に `env.production` を用意済み（`database_id` はプレー
 
 1. 本番アカウントに切り替え: `npx wrangler logout && npx wrangler login`（または本番アカウントの `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` を export）
 2. `cd apps/api && npx wrangler d1 create bookbook-db` → 本番の account id と発行された database id を wrangler.jsonc の `env.production` の `TBD-prod-account-id` / `TBD-prod-database-id` に設定
-3. `make db-migrate-prod`
-4. データ投入（テストと同じ seed.sql）:
+3. R2 バケット作成: `cd apps/api && npx wrangler r2 bucket create bookbook-thumbnails`
+4. `make db-migrate-prod`
+5. データ投入（テストと同じ seed.sql）:
    `cd apps/api && npx wrangler d1 execute bookbook-db --remote --env production --file=../../seed.sql`
-5. シークレットを本番 env に登録（env ごとに別管理）:
+6. シークレットを本番 env に登録（env ごとに別管理）:
    `npx wrangler secret put SLACK_WEBHOOK_URL --env production`（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI / AUTH_COOKIE_SECRET / ALLOWED_EMAIL_DOMAINS / ALLOWED_EMAILS も同様）
    - GOOGLE_REDIRECT_URI は本番 Worker の URL に合わせ、Google Cloud Console 側にもリダイレクト URI を追加する
-6. `make deploy-api-prod`
-7. テスト環境と同じ動作確認
+7. `make deploy-api-prod`
+8. テスト環境と同じ動作確認（サムネイルのバックフィルも本番で実行）
 
 ## 後片付け
 

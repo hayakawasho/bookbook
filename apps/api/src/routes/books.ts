@@ -100,8 +100,8 @@ booksRoutes.post('/', async (c) => {
 
   const externalCoverSrc = body.cover?.src || undefined
   let coverSrc = externalCoverSrc
-  if (coverSrc && !isSelfThumbnailSrc(coverSrc)) {
-    // 他 location で登録済みなら R2 に既にあるため、外部 fetch せず self URL から始める
+  if (!coverSrc || !isSelfThumbnailSrc(coverSrc)) {
+    // 他 location で取り込み・撮影済みなら R2 に既にあるため、外部 fetch せず self URL から始める
     const existing = await existingThumbnailSrc(c.env.THUMBNAILS, body.isbn)
     if (existing) {
       coverSrc = existing

@@ -57,7 +57,8 @@ cd apps/api && npx wrangler d1 execute bookbook-db --local \
 | HTTP フレームワーク | Hono 4 |
 | 認証           | Google OAuth 2.0 + HTTP-only Cookie セッション（`src/auth.ts`） |
 | データベース   | Cloudflare D1（`bookbook-db`。拠点は `location` カラムで表現、マイグレーションは `migrations/`） |
-| 外部メタデータ | ISBN に対し OpenBD / Google Books API / NDL OpenSearch 等を Worker から取得・マージ |
+| 画像ストレージ | Cloudflare R2（`bookbook-thumbnails`、binding `THUMBNAILS`）。書影を isbn 単位（キー `covers/{isbn}`）で保存し `/api/thumbnails/:isbn` で配信。`cover_src` には自前 URL を保存する。ローカルは `wrangler dev` が自動シミュレーション、リモートは初回のみ `wrangler r2 bucket create bookbook-thumbnails` |
+| 外部メタデータ | ISBN に対し OpenBD / Google Books API / NDL OpenSearch 等を Worker から取得・マージ。表紙画像は登録時に R2 へ取り込み（失敗時は外部 URL のままフォールバック） |
 | XML パース     | fast-xml-parser（NDL 応答など） |
 | 通知           | Slack Incoming Webhook（任意。貸出・返却・新規登録時にサーバー側から送信） |
 

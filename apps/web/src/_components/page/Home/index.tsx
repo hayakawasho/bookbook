@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { BottomSheet } from '../../ui/BottomSheet'
 import { Dialog } from '../../ui/Dialog'
@@ -49,6 +49,13 @@ export function HomeScreen() {
     clearScanSession,
     handleSheetClose,
   })
+
+  // シートを閉じずに別の本を検索し直したとき、撮影済み画像を持ち越さない
+  const externalIsbn = lookup.sheetMode?.kind === 'external' ? lookup.sheetMode.book.isbn : null
+  const clearCoverCapture = coverCapture.clear
+  useEffect(() => {
+    clearCoverCapture()
+  }, [externalIsbn, clearCoverCapture])
 
   return (
     <div className="min-h-full grid h-[stretch] grid-rows-[minmax(288px,50dvh)_auto] bg-background">

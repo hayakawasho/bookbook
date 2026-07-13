@@ -384,6 +384,32 @@ describe('POST /api/books', () => {
       .first<{ cover_src: string }>()
     expect(row?.cover_src).toBe(selfThumbnailSrc(isbn))
   })
+
+  it('coverなしの登録でもR2に書影があればselfURLで登録する', async () => {
+    const isbn = '9784000000004'
+    await env.THUMBNAILS.put(thumbnailKey(isbn), bytes(600), {
+      httpMetadata: { contentType: 'image/jpeg' },
+    })
+    const cookie = await sessionCookie()
+
+    const res = await fetchWithExecutionContext(
+      new Request('http://localhost/api/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({
+          isbn,
+          title: '他拠点で撮影済み本',
+          location: 'okinawa',
+        }),
+      }),
+    )
+    expect(res.status).toBe(201)
+
+    const row = await env.DB.prepare('SELECT cover_src FROM books WHERE isbn = ?')
+      .bind(isbn)
+      .first<{ cover_src: string }>()
+    expect(row?.cover_src).toBe(selfThumbnailSrc(isbn))
+  })
 })
 
 describe('POST /api/books/:isbn/copies', () => {

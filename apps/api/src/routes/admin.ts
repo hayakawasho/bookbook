@@ -20,7 +20,8 @@ export const adminRoutes = new Hono<{
   Variables: { sessionUser: SessionUser }
 }>()
 
-const BACKFILL_BATCH_SIZE = 5
+// 1 isbn あたり外部 API + 表紙候補の検証 GET + R2 put で subrequest を多く使うため小さめに保つ
+const BACKFILL_BATCH_SIZE = 3
 
 // POST /api/admin/backfill-thumbnails — バックフィル完了後に削除する一時ルート
 adminRoutes.post('/backfill-thumbnails', async (c) => {

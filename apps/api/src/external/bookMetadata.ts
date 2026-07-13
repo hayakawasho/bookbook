@@ -82,11 +82,12 @@ export function canonicalOpenBdCoverUri(isbn: string): string {
   return `https://cover.openbd.jp/${encodeURIComponent(isbn)}.jpg`
 }
 
-/** OpenBD の表紙 URL は API 応答を信頼する（CDN がボット向け GET を拒否することがある） */
-function isTrustedOpenBdCoverSrc(src: string): boolean {
-  return /^https:\/\/cover\.openbd\.jp\//i.test(src)
+function ndlThumbnailUri(isbn: string): string {
+  return `https://iss.ndl.go.jp/thumbnail/${encodeURIComponent(isbn)}`
 }
 
+// OpenBD の表紙 URL もかつては無条件信頼していたが、現在は API・CDN とも死んだ URL を返すことが
+// 多く、信頼すると後段の生きた候補（Google / NDL / Open Library）に到達できないため全候補を検証する
 export async function firstUsableCoverSrc(
   ...candidates: (string | undefined)[]
 ): Promise<string | undefined> {
@@ -94,10 +95,6 @@ export async function firstUsableCoverSrc(
     const src = normalizeCoverSrc(raw)
     if (!src) {
       continue
-    }
-
-    if (isTrustedOpenBdCoverSrc(src)) {
-      return src
     }
 
     // R2 保存済みの自前サムネイルは相対パスのため fetch 検証できない。無条件に信頼する
@@ -115,13 +112,13 @@ export async function firstUsableCoverSrc(
 /** 表紙優先: OpenBD（API + 正規 URL）→ Google → NDL → Open Library */
 async function buildCoverSrc(
   isbn: string,
-  options: { openBdSrc?: string; googleSrc?: string; ndlSrc?: string },
+  options: { openBdSrc?: string; googleSrc?: string },
 ): Promise<{ src?: string }> {
   const src = await firstUsableCoverSrc(
     options.openBdSrc,
     canonicalOpenBdCoverUri(isbn),
     options.googleSrc,
-    options.ndlSrc,
+    ndlThumbnailUri(isbn),
     openLibraryCoverUri(isbn),
   )
   return { src }
@@ -165,8 +162,7 @@ export async function resolveMetadataCoverSrc(
   existingCoverSrc: string | undefined,
   isbn: string,
 ): Promise<MetadataCoverPatch> {
-  // canonicalOpenBdCoverUri は実在確認なしに無条件で信頼されるため、既存が self URL のときは
-  // 候補としてこれより後段に置いても選ばれない。自前サムネイルは無条件で維持する
+  // 自前サムネイルは外部候補との比較をせず常に維持する（外部への検証 GET も不要）
   if (isSelfThumbnailSrc(existingCoverSrc)) {
     return {}
   }
@@ -452,9 +448,7 @@ export async function fetchExternalBookMetadata(isbn: string): Promise<ExternalB
     return null
   }
 
-  const thumbUri = `https://iss.ndl.go.jp/thumbnail/${encodeURIComponent(isbn)}`
-  const thumbOk = await fetch(thumbUri).then((r) => r.ok)
-  const cover = await buildCoverSrc(isbn, { ndlSrc: thumbOk ? thumbUri : undefined })
+  const cover = await buildCoverSrc(isbn, {})
 
   return { ...ndl, cover }
 }
