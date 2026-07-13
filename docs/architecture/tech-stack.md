@@ -91,5 +91,3 @@ cd apps/api && npx wrangler d1 execute bookbook-db --local \
 | 共有パッケージ | `packages/utils/package.json` |
 
 ---
-
-選定の変更時は、このファイルとルートの `AGENTS.md` / `CLAUDE.md` の概要表をあわせて更新する。

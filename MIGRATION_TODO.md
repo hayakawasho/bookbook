@@ -29,7 +29,7 @@ cd apps/api && npx wrangler d1 execute bookbook-db --remote --file=../../seed.sq
 
 ### 2. テスト環境へデプロイ
 
-既存 Worker（bookbook-worker）のシークレット（SLACK_WEBHOOK_URL / GOOGLE_* / AUTH_COOKIE_SECRET / ALLOWED_EMAIL_DOMAINS）はそのまま引き継がれる。
+テスト用アカウントの Worker に必要なシークレット（SLACK_WEBHOOK_URL / GOOGLE_* / AUTH_COOKIE_SECRET / ALLOWED_EMAIL_DOMAINS / ALLOWED_EMAILS）を登録する。`npx wrangler secret list` で登録名を確認し、不足分は `npx wrangler secret put <KEY>` で登録する。
 
 ```sh
 make deploy-api
@@ -47,12 +47,12 @@ make deploy-api
 wrangler.jsonc に `env.production` を用意済み（`database_id` はプレースホルダ）。
 
 1. 本番アカウントに切り替え: `npx wrangler logout && npx wrangler login`（または本番アカウントの `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` を export）
-2. `cd apps/api && npx wrangler d1 create bookbook-db` → 発行された id を wrangler.jsonc の `env.production` の `TBD-prod-database-id` に設定
+2. `cd apps/api && npx wrangler d1 create bookbook-db` → 本番の account id と発行された database id を wrangler.jsonc の `env.production` の `TBD-prod-account-id` / `TBD-prod-database-id` に設定
 3. `make db-migrate-prod`
 4. データ投入（テストと同じ seed.sql）:
    `cd apps/api && npx wrangler d1 execute bookbook-db --remote --env production --file=../../seed.sql`
 5. シークレットを本番 env に登録（env ごとに別管理）:
-   `npx wrangler secret put SLACK_WEBHOOK_URL --env production`（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI / AUTH_COOKIE_SECRET / ALLOWED_EMAIL_DOMAINS も同様）
+   `npx wrangler secret put SLACK_WEBHOOK_URL --env production`（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI / AUTH_COOKIE_SECRET / ALLOWED_EMAIL_DOMAINS / ALLOWED_EMAILS も同様）
    - GOOGLE_REDIRECT_URI は本番 Worker の URL に合わせ、Google Cloud Console 側にもリダイレクト URI を追加する
 6. `make deploy-api-prod`
 7. テスト環境と同じ動作確認

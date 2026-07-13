@@ -5,12 +5,17 @@ dist
 storybook-static
 *.local
 .DS_Store
+.env
+.env.production
 
 apps/mobile
 docs/plan
 
 # Cloudflare Worker ローカル開発用シークレット（コミット禁止）
 .dev.vars
+
+# D1 移行データ（借り手メールを含む）
+seed.sql
 
 # Wrangler ローカル状態
 .wrangler

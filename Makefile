@@ -15,10 +15,10 @@ dev-api:
 	$(NPM) run dev -w @bookbook/api
 
 build:
-	$(NPM) run build -w @bookbook/web
+	$(NPM) run build
 
-deploy-api:
-	$(NPM) run deploy -w @bookbook/api
+deploy-api: build
+	cd apps/api && $(NPM) exec -- wrangler deploy --env=""
 
 preview:
 	$(NPM) run preview -w @bookbook/web
@@ -41,16 +41,16 @@ lint-fix:
 	$(NPM) exec biome check --write .
 
 db-migrate:
-	cd apps/api && $(NPM) exec wrangler d1 migrations apply bookbook-db --local
+	cd apps/api && $(NPM) exec -- wrangler d1 migrations apply bookbook-db --local
 
 db-migrate-remote:
-	cd apps/api && $(NPM) exec wrangler d1 migrations apply bookbook-db --remote
+	cd apps/api && $(NPM) exec -- wrangler d1 migrations apply bookbook-db --remote
 
 deploy-api-prod:
-	cd apps/api && $(NPM) exec wrangler deploy -- --env production
+	cd apps/api && $(NPM) exec -- wrangler deploy --env production
 
 db-migrate-prod:
-	cd apps/api && $(NPM) exec wrangler d1 migrations apply bookbook-db -- --remote --env production
+	cd apps/api && $(NPM) exec -- wrangler d1 migrations apply bookbook-db --remote --env production
 
 clean:
 	rm -rf node_modules apps/web/node_modules apps/api/node_modules \

@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bookbook-worker",
+  "account_id": "646a8d831dc0e72f5e401c798ae1c589",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-15",
   "compatibility_flags": ["nodejs_compat"],
@@ -13,6 +14,7 @@
   //   GOOGLE_REDIRECT_URI           - リダイレクト URI（例: https://<workers-host>/api/auth/google/callback）
   //   AUTH_COOKIE_SECRET            - セッション署名用（16文字以上のランダム文字列推奨）
   //   ALLOWED_EMAIL_DOMAINS         - 許可メールドメイン（カンマ区切り、例: panorama.jp）
+  //   ALLOWED_EMAILS                - 個別に許可するメールアドレス（カンマ区切り）
   // vars で公開してよいものだけ vars に、シークレットは wrangler secret put で登録。
   //   AUTH_SUCCESS_REDIRECT（任意） - ログイン後のパス（既定 `/`）。vars でよい
   "vars": {},
@@ -21,15 +23,28 @@
     {
       "binding": "DB",
       "database_name": "bookbook-db",
-      "database_id": "7cc2bd14-e1be-4e10-8ace-c837ad3789c5",
+      "database_id": "1b65da37-5578-4b14-9336-237a6c7de94b",
       "migrations_dir": "migrations"
     }
   ],
+  // リモート初回のみ: `wrangler r2 bucket create bookbook-thumbnails`
+  "r2_buckets": [
+    {
+      "binding": "THUMBNAILS",
+      "bucket_name": "bookbook-thumbnails"
+    }
+  ],
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
   "env": {
     "production": {
       // 本番アカウントで `wrangler d1 create bookbook-db` 後に account_id / database_id を設定する
       // デプロイ: 本番アカウントに `wrangler login` し直すか CLOUDFLARE_API_TOKEN を使い `wrangler deploy --env production`
       // シークレットは env ごとに登録が必要: `wrangler secret put <KEY> --env production`
+      "account_id": "TBD-prod-account-id",
       "name": "bookbook-worker",
       "vars": {},
       "d1_databases": [
@@ -38,6 +53,13 @@
           "database_name": "bookbook-db",
           "database_id": "TBD-prod-database-id",
           "migrations_dir": "migrations"
+        }
+      ],
+      // リモート初回のみ: `wrangler r2 bucket create bookbook-thumbnails --env production`
+      "r2_buckets": [
+        {
+          "binding": "THUMBNAILS",
+          "bucket_name": "bookbook-thumbnails"
         }
       ]
     }

@@ -7,16 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @bookbook/web",
-    "dev:api": "npm run dev -w @bookbook@bookbook/api",
-    "build": "npm run build -w @bookbook/web",
-    "deploy:api": "npm run deploy -w @bookbook@bookbook/api",
-    "preview": "npm run preview -w @bookbook/web",
-    "storybook": "npm run storybook -w @bookbook/web",
-    "build-storybook": "npm run build-storybook -w @bookbook/web",
-    "test": "npm run test -w @bookbook/utils && npm run test -w @bookbook/web && npm run test -w @bookbook@bookbook/api",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write ."
+    "build": "npm run build -w @bookbook/web"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
