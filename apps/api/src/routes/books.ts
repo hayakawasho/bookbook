@@ -36,6 +36,7 @@ export type BooksBindings = {
   THUMBNAILS: R2Bucket
   SLACK_WEBHOOK_URL: string
   RAKUTEN_APP_ID?: string
+  RAKUTEN_ACCESS_KEY?: string
 }
 
 export const booksRoutes = new Hono<{
@@ -75,7 +76,12 @@ booksRoutes.get('/:isbn', async (c) => {
     return c.json({ status: 'registered', book: bookFromRow(row) })
   }
 
-  const external = await fetchExternalBookMetadata(isbn, { rakutenAppId: c.env.RAKUTEN_APP_ID })
+  const external = await fetchExternalBookMetadata(isbn, {
+    rakuten: {
+      appId: c.env.RAKUTEN_APP_ID ?? '',
+      accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',
+    },
+  })
   if (external?.title) {
     return c.json({ status: 'external', book: external })
   }
@@ -245,7 +251,12 @@ booksRoutes.patch('/:isbn/metadata', async (c) => {
     return c.json({ error: 'book not found' }, 404)
   }
 
-  const external = await fetchExternalBookMetadata(isbn, { rakutenAppId: c.env.RAKUTEN_APP_ID })
+  const external = await fetchExternalBookMetadata(isbn, {
+    rakuten: {
+      appId: c.env.RAKUTEN_APP_ID ?? '',
+      accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',
+    },
+  })
   if (!external?.title) {
     return c.json({ error: 'external metadata not found' }, 404)
   }

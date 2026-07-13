@@ -353,13 +353,22 @@ type RakutenBooksResponse = {
   Items?: Array<{ Item?: { largeImageUrl?: string; mediumImageUrl?: string } }>
 }
 
+export type RakutenCredentials = {
+  appId: string
+  accessKey: string
+}
+
 export async function fetchRakutenCoverSrc(
   isbn: string,
-  appId: string,
+  credentials: RakutenCredentials,
 ): Promise<string | undefined> {
   try {
-    const url = `https://app.rakuten.co.jp/services/api/BooksBook/Search/20170404?format=json&isbn=${encodeURIComponent(isbn)}&applicationId=${encodeURIComponent(appId)}`
-    const res = await fetch(url)
+    const url = new URL('https://openapi.rakuten.co.jp/services/api/BooksBook/Search/20170404')
+    url.searchParams.set('format', 'json')
+    url.searchParams.set('isbn', isbn)
+    url.searchParams.set('applicationId', credentials.appId)
+
+    const res = await fetch(url, { headers: { accessKey: credentials.accessKey } })
     if (!res.ok) {
       return undefined
     }
@@ -440,13 +449,16 @@ async function mergeGoogleAndOpenBd(
 
 export async function fetchExternalBookMetadata(
   isbn: string,
-  options?: { rakutenAppId?: string },
+  options?: { rakuten?: RakutenCredentials },
 ): Promise<ExternalBookPayload | null> {
-  const rakutenAppId = options?.rakutenAppId
+  const rakuten = options?.rakuten
+  const hasRakutenCredentials = Boolean(rakuten?.appId.trim() && rakuten.accessKey.trim())
   const [google, openBd, rakutenSrc] = await Promise.all([
     fetchGoogleVolume(isbn),
     fetchOpenBd(isbn),
-    rakutenAppId ? fetchRakutenCoverSrc(isbn, rakutenAppId) : Promise.resolve(undefined),
+    hasRakutenCredentials && rakuten
+      ? fetchRakutenCoverSrc(isbn, rakuten)
+      : Promise.resolve(undefined),
   ])
   const primary = await mergeGoogleAndOpenBd(isbn, openBd, google, rakutenSrc)
   if (primary?.title) {

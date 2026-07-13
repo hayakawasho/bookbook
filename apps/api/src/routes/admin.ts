@@ -14,6 +14,7 @@ export type AdminBindings = {
   DB: D1Database
   THUMBNAILS: R2Bucket
   RAKUTEN_APP_ID?: string
+  RAKUTEN_ACCESS_KEY?: string
 }
 
 export const adminRoutes = new Hono<{
@@ -49,7 +50,12 @@ adminRoutes.post('/backfill-thumbnails', async (c) => {
       }
     }
 
-    const external = await fetchExternalBookMetadata(isbn, { rakutenAppId: c.env.RAKUTEN_APP_ID })
+    const external = await fetchExternalBookMetadata(isbn, {
+      rakuten: {
+        appId: c.env.RAKUTEN_APP_ID ?? '',
+        accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',
+      },
+    })
     const externalSrc = external?.cover?.src
     if (externalSrc) {
       const refetchedSrc = await ingestExternalCover(c.env.THUMBNAILS, isbn, externalSrc)

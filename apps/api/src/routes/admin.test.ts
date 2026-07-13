@@ -204,7 +204,7 @@ describe('POST /api/admin/backfill-thumbnails', () => {
     expect((await coverRow(liveIsbn))?.cover_src).toBe(selfThumbnailSrc(liveIsbn))
   })
 
-  it('楽天だけが表紙を持つisbnはrefetchでselfURLに更新される（RAKUTEN_APP_ID設定時）', async () => {
+  it('楽天だけが表紙を持つisbnはrefetchでselfURLに更新される（楽天認証設定時）', async () => {
     const isbn = '9784000000105'
     const rakutenSrc = 'https://thumbnail.image.rakuten.co.jp/@0_mall/example/cabinet/cover.jpg'
     await seedBook(isbn, 'https://example.com/dead.jpg')
@@ -221,7 +221,7 @@ describe('POST /api/admin/backfill-thumbnails', () => {
           ]),
           { status: 200 },
         ),
-      'app.rakuten.co.jp': () =>
+      'openapi.rakuten.co.jp': () =>
         new Response(JSON.stringify({ Items: [{ Item: { largeImageUrl: rakutenSrc } }] }), {
           status: 200,
         }),
@@ -234,7 +234,7 @@ describe('POST /api/admin/backfill-thumbnails', () => {
         method: 'POST',
         headers: { Cookie: cookie },
       }),
-      { ...env, RAKUTEN_APP_ID: 'test-app-id' },
+      { ...env, RAKUTEN_APP_ID: 'test-app-id', RAKUTEN_ACCESS_KEY: 'test-access-key' },
     )
     const body = (await res.json()) as {
       processed: number

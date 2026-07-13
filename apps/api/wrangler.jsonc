@@ -15,8 +15,10 @@
   //   AUTH_COOKIE_SECRET            - セッション署名用（16文字以上のランダム文字列推奨）
   //   ALLOWED_EMAIL_DOMAINS         - 許可メールドメイン（カンマ区切り、例: panorama.jp）
   //   ALLOWED_EMAILS                - 個別に許可するメールアドレス（カンマ区切り）
-  //   RAKUTEN_APP_ID（任意）        - 楽天ブックス書籍検索 API の applicationId。未設定時は表紙候補から楽天を除外する。
-  //                                   ローカルは `.dev.vars` に `RAKUTEN_APP_ID=...` を書ける
+  //   RAKUTEN_APP_ID（任意）        - 楽天ブックス書籍検索 API の applicationId
+  //   RAKUTEN_ACCESS_KEY（任意）    - 楽天ブックス書籍検索 API の accessKey
+  //                                   両方設定時のみ楽天を利用する。ローカルは `.dev.vars`、
+  //                                   Cloudflare は `wrangler secret put <KEY>` で設定する
   // vars で公開してよいものだけ vars に、シークレットは wrangler secret put で登録。
   //   AUTH_SUCCESS_REDIRECT（任意） - ログイン後のパス（既定 `/`）。vars でよい
   "vars": {},

@@ -207,6 +207,57 @@ describe('GET /api/books/:isbn', () => {
     expect(body.status).toBe('external')
   })
 
+  it('楽天認証情報を外部 API に渡して書影を返す', async () => {
+    const cookie = await sessionCookie()
+    const rakutenSrc = 'https://thumbnail.image.rakuten.co.jp/@0_mall/example/cabinet/cover.jpg'
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('googleapis.com/books')) {
+        return new Response(JSON.stringify({ totalItems: 0 }), { status: 200 })
+      }
+      if (url.includes('api.openbd.jp')) {
+        return new Response(
+          JSON.stringify([
+            {
+              onix: { DescriptiveDetail: {}, CollateralDetail: {} },
+              summary: { title: '楽天カバー本' },
+            },
+          ]),
+          { status: 200 },
+        )
+      }
+      if (url.includes('openapi.rakuten.co.jp')) {
+        expect(new Headers(init?.headers).get('accessKey')).toBe('test-access-key')
+        return new Response(JSON.stringify({ Items: [{ Item: { largeImageUrl: rakutenSrc } }] }), {
+          status: 200,
+        })
+      }
+      if (url === rakutenSrc) {
+        return new Response(bytes(600), {
+          status: 200,
+          headers: { 'Content-Type': 'image/jpeg' },
+        })
+      }
+      return new Response('', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const res = await app.fetch(
+      new Request('http://localhost/api/books/9784000000201?location=daikanyama', {
+        headers: { Cookie: cookie },
+      }),
+      { ...env, RAKUTEN_APP_ID: 'test-app-id', RAKUTEN_ACCESS_KEY: 'test-access-key' },
+    )
+
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      status: string
+      book: { cover: { src?: string } }
+    }
+    expect(body.status).toBe('external')
+    expect(body.book.cover.src).toBe(rakutenSrc)
+  })
+
   it('外部にも無ければ notfound 404', async () => {
     const cookie = await sessionCookie()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })))
