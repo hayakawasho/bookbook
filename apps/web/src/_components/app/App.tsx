@@ -35,7 +35,7 @@ function AppContent() {
   }
 
   return (
-    <div className="w-full ___max-w-[430px] mx-auto h-dvh flex flex-col bg-background relative text-text">
+    <div className="w-full max-w-[430px] mx-auto h-dvh flex flex-col bg-background relative text-text">
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[70px]">
         <ActiveTabPanel tab={state.activeTab} />
       </div>

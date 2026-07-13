@@ -1,9 +1,10 @@
 {
-  "name": "bookbook",
-  "short_name": "bookbook",
-  "description": "bookbook ライブラリアプリ",
+  "name": "BooKBooK",
+  "short_name": "BooKBooK",
+  "description": "BooKBooK | 本を身近に。広がる交流。",
   "start_url": "/",
   "scope": "/",
+  "orientation": "portrait",
   "display": "standalone",
   "background_color": "#F2F2F2",
   "theme_color": "#1C1F22",

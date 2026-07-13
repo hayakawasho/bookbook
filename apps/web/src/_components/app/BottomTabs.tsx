@@ -39,7 +39,7 @@ export function BottomTabs() {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full ___max-w-[430px] flex bg-surface border-t border-border z-10"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex bg-surface border-t border-border z-10"
       style={{ height: 'calc(70px + env(safe-area-inset-bottom, 0px))' }}
       aria-label="タブナビゲーション"
     >
