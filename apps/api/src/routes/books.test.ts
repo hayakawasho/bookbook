@@ -227,7 +227,10 @@ describe('GET /api/books/:isbn', () => {
         )
       }
       if (url.includes('openapi.rakuten.co.jp')) {
-        expect(new Headers(init?.headers).get('accessKey')).toBe('test-access-key')
+        const headers = new Headers(init?.headers)
+        expect(headers.get('accessKey')).toBe('test-access-key')
+        expect(headers.get('Referer')).toBe('https://bookbook-worker.example.com/')
+        expect(headers.get('Origin')).toBe('https://bookbook-worker.example.com')
         return new Response(JSON.stringify({ Items: [{ Item: { largeImageUrl: rakutenSrc } }] }), {
           status: 200,
         })
@@ -246,7 +249,12 @@ describe('GET /api/books/:isbn', () => {
       new Request('http://localhost/api/books/9784000000201?location=daikanyama', {
         headers: { Cookie: cookie },
       }),
-      { ...env, RAKUTEN_APP_ID: 'test-app-id', RAKUTEN_ACCESS_KEY: 'test-access-key' },
+      {
+        ...env,
+        RAKUTEN_APP_ID: 'test-app-id',
+        RAKUTEN_ACCESS_KEY: 'test-access-key',
+        RAKUTEN_SITE_URL: 'https://bookbook-worker.example.com',
+      },
     )
 
     expect(res.status).toBe(200)

@@ -4,7 +4,11 @@ import { fetchExternalBookMetadata, fetchRakutenCoverSrc } from './bookMetadata'
 
 const ISBN = '9784000000201'
 const RAKUTEN_COVER_SRC = 'https://thumbnail.image.rakuten.co.jp/@0_mall/example/cabinet/cover.jpg'
-const RAKUTEN_CREDENTIALS = { appId: 'app-id', accessKey: 'access-key' }
+const RAKUTEN_CREDENTIALS = {
+  appId: 'app-id',
+  accessKey: 'access-key',
+  siteUrl: 'https://bookbook-worker.shohayakawa.workers.dev',
+}
 
 function bytes(length: number): Uint8Array {
   return new Uint8Array(length).fill(1)
@@ -58,7 +62,10 @@ describe('fetchRakutenCoverSrc', () => {
     expect(url.searchParams.get('isbn')).toBe(ISBN)
     expect(url.searchParams.get('applicationId')).toBe(RAKUTEN_CREDENTIALS.appId)
     expect(url.searchParams.get('format')).toBe('json')
-    expect(new Headers(init?.headers).get('accessKey')).toBe(RAKUTEN_CREDENTIALS.accessKey)
+    const headers = new Headers(init?.headers)
+    expect(headers.get('accessKey')).toBe(RAKUTEN_CREDENTIALS.accessKey)
+    expect(headers.get('Referer')).toBe(`${RAKUTEN_CREDENTIALS.siteUrl}/`)
+    expect(headers.get('Origin')).toBe(RAKUTEN_CREDENTIALS.siteUrl)
   })
 
   it('largeImageUrl が無ければ mediumImageUrl を返す', async () => {
@@ -205,8 +212,9 @@ describe('fetchExternalBookMetadata の楽天連携', () => {
   })
 
   it.each([
-    { appId: 'app-id', accessKey: '' },
-    { appId: '', accessKey: 'access-key' },
+    { appId: 'app-id', accessKey: '', siteUrl: RAKUTEN_CREDENTIALS.siteUrl },
+    { appId: '', accessKey: 'access-key', siteUrl: RAKUTEN_CREDENTIALS.siteUrl },
+    { appId: 'app-id', accessKey: 'access-key', siteUrl: '' },
   ])('楽天認証情報が片方だけなら楽天 API を呼ばない', async (rakuten) => {
     const fetchMock = stubFetch({
       'api.openbd.jp': () =>

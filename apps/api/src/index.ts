@@ -33,6 +33,8 @@ type Bindings = {
   RAKUTEN_APP_ID?: string
   /** 楽天ブックス書籍検索 API の accessKey */
   RAKUTEN_ACCESS_KEY?: string
+  /** 楽天ウェブサービスに登録した BooKBooK の公開 URL */
+  RAKUTEN_SITE_URL?: string
 }
 
 const app = new Hono<{ Bindings: Bindings; Variables: { sessionUser: SessionUser } }>()

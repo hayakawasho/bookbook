@@ -37,6 +37,7 @@ export type BooksBindings = {
   SLACK_WEBHOOK_URL: string
   RAKUTEN_APP_ID?: string
   RAKUTEN_ACCESS_KEY?: string
+  RAKUTEN_SITE_URL?: string
 }
 
 export const booksRoutes = new Hono<{
@@ -80,6 +81,7 @@ booksRoutes.get('/:isbn', async (c) => {
     rakuten: {
       appId: c.env.RAKUTEN_APP_ID ?? '',
       accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',
+      siteUrl: c.env.RAKUTEN_SITE_URL ?? '',
     },
   })
   if (external?.title) {
@@ -255,6 +257,7 @@ booksRoutes.patch('/:isbn/metadata', async (c) => {
     rakuten: {
       appId: c.env.RAKUTEN_APP_ID ?? '',
       accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',
+      siteUrl: c.env.RAKUTEN_SITE_URL ?? '',
     },
   })
   if (!external?.title) {

@@ -234,7 +234,12 @@ describe('POST /api/admin/backfill-thumbnails', () => {
         method: 'POST',
         headers: { Cookie: cookie },
       }),
-      { ...env, RAKUTEN_APP_ID: 'test-app-id', RAKUTEN_ACCESS_KEY: 'test-access-key' },
+      {
+        ...env,
+        RAKUTEN_APP_ID: 'test-app-id',
+        RAKUTEN_ACCESS_KEY: 'test-access-key',
+        RAKUTEN_SITE_URL: 'https://bookbook-worker.example.com',
+      },
     )
     const body = (await res.json()) as {
       processed: number

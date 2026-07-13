@@ -17,8 +17,9 @@
   //   ALLOWED_EMAILS                - 個別に許可するメールアドレス（カンマ区切り）
   //   RAKUTEN_APP_ID（任意）        - 楽天ブックス書籍検索 API の applicationId
   //   RAKUTEN_ACCESS_KEY（任意）    - 楽天ブックス書籍検索 API の accessKey
-  //                                   両方設定時のみ楽天を利用する。ローカルは `.dev.vars`、
-  //                                   Cloudflare は `wrangler secret put <KEY>` で設定する
+  //   RAKUTEN_SITE_URL（任意）      - 楽天ウェブサービスに登録した BooKBooK の公開 URL
+  //                                   3項目すべての設定時のみ楽天を利用する。ローカルは `.dev.vars`、
+  //                                   Cloudflare は ID/Key を secret、URL を vars で設定する
   // vars で公開してよいものだけ vars に、シークレットは wrangler secret put で登録。
   //   AUTH_SUCCESS_REDIRECT（任意） - ログイン後のパス（既定 `/`）。vars でよい
   "vars": {},

@@ -356,6 +356,7 @@ type RakutenBooksResponse = {
 export type RakutenCredentials = {
   appId: string
   accessKey: string
+  siteUrl: string
 }
 
 export async function fetchRakutenCoverSrc(
@@ -368,7 +369,14 @@ export async function fetchRakutenCoverSrc(
     url.searchParams.set('isbn', isbn)
     url.searchParams.set('applicationId', credentials.appId)
 
-    const res = await fetch(url, { headers: { accessKey: credentials.accessKey } })
+    const siteUrl = new URL(credentials.siteUrl)
+    const res = await fetch(url, {
+      headers: {
+        accessKey: credentials.accessKey,
+        Referer: siteUrl.href,
+        Origin: siteUrl.origin,
+      },
+    })
     if (!res.ok) {
       return undefined
     }
@@ -452,7 +460,9 @@ export async function fetchExternalBookMetadata(
   options?: { rakuten?: RakutenCredentials },
 ): Promise<ExternalBookPayload | null> {
   const rakuten = options?.rakuten
-  const hasRakutenCredentials = Boolean(rakuten?.appId.trim() && rakuten.accessKey.trim())
+  const hasRakutenCredentials = Boolean(
+    rakuten?.appId.trim() && rakuten.accessKey.trim() && rakuten.siteUrl.trim(),
+  )
   const [google, openBd, rakutenSrc] = await Promise.all([
     fetchGoogleVolume(isbn),
     fetchOpenBd(isbn),

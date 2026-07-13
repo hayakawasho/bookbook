@@ -15,6 +15,7 @@ export type AdminBindings = {
   THUMBNAILS: R2Bucket
   RAKUTEN_APP_ID?: string
   RAKUTEN_ACCESS_KEY?: string
+  RAKUTEN_SITE_URL?: string
 }
 
 export const adminRoutes = new Hono<{
@@ -54,6 +55,7 @@ adminRoutes.post('/backfill-thumbnails', async (c) => {
       rakuten: {
         appId: c.env.RAKUTEN_APP_ID ?? '',
         accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',
+        siteUrl: c.env.RAKUTEN_SITE_URL ?? '',
       },
     })
     const externalSrc = external?.cover?.src
