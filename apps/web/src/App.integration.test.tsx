@@ -4,13 +4,14 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 
 import { App } from './_components/app/App'
+import { createTestDeps } from './test/testDeps'
 
 describe('App', () => {
   describe('モックセッション', () => {
     it('起動時にホームのスキャン UI が表示される', async () => {
       render(
         <MemoryRouter>
-          <App />
+          <App {...createTestDeps()} />
         </MemoryRouter>,
       )
       expect(await screen.findByRole('heading', { name: /scan barcode/i })).toBeInTheDocument()
@@ -20,7 +21,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(
         <MemoryRouter>
-          <App />
+          <App {...createTestDeps()} />
         </MemoryRouter>,
       )
       await screen.findByRole('heading', { name: /scan barcode/i })
@@ -35,7 +36,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(
         <MemoryRouter>
-          <App />
+          <App {...createTestDeps()} />
         </MemoryRouter>,
       )
       await screen.findByRole('heading', { name: /scan barcode/i })
@@ -51,7 +52,7 @@ describe('App', () => {
     it('/library?q= の直リンクで検索クエリが適用される', async () => {
       render(
         <MemoryRouter initialEntries={['/library?q=リーダブル']}>
-          <App />
+          <App {...createTestDeps()} />
         </MemoryRouter>,
       )
 
@@ -63,7 +64,7 @@ describe('App', () => {
     it('/history?tab=past の直リンクで「これまで借りた本」が表示される', async () => {
       render(
         <MemoryRouter initialEntries={['/history?tab=past']}>
-          <App />
+          <App {...createTestDeps()} />
         </MemoryRouter>,
       )
 
@@ -74,7 +75,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(
         <MemoryRouter>
-          <App />
+          <App {...createTestDeps()} />
         </MemoryRouter>,
       )
       await screen.findByRole('heading', { name: /scan barcode/i })

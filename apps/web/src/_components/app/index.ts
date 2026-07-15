@@ -1,3 +1,5 @@
 export { AppProviders } from './AppProviders'
 export { AppStateProvider, type ThemeMode, useAppState } from './AppStateContext'
 export { AuthProvider, type CurrentUser, useAuth } from './AuthContext'
+export { type AppConfig, type Profile, resolveAppConfig } from './config'
+export { createRepositories, type Repositories } from './repositories'

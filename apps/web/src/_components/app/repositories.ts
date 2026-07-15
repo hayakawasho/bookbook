@@ -1,3 +1,4 @@
+import { createFetchClient } from '../../_foundation/http/client'
 import { HttpBookRepository } from '../../_repositories/books/httpRepository'
 import { MockBookRepository } from '../../_repositories/books/repository'
 import { HttpHistoryRepository } from '../../_repositories/history/httpRepository'
@@ -5,14 +6,25 @@ import { MockHistoryRepository } from '../../_repositories/history/repository'
 
 import type { BookRepository } from '../../_usecases/book/ports'
 import type { HistoryRepository } from '../../_usecases/history/ports'
+import type { AppConfig } from './config'
 
-const USE_HTTP_API = import.meta.env.VITE_USE_HTTP_API === 'true'
-const API_BASE = '/api'
+export type Repositories = {
+  bookRepo: BookRepository
+  historyRepo: HistoryRepository
+}
 
-export const bookRepo: BookRepository = USE_HTTP_API
-  ? new HttpBookRepository(API_BASE)
-  : new MockBookRepository()
+export function createRepositories(config: AppConfig): Repositories {
+  if (config.profile === 'production') {
+    const client = createFetchClient(config.apiBase)
+    return {
+      bookRepo: new HttpBookRepository(client),
+      historyRepo: new HttpHistoryRepository(client),
+    }
+  }
 
-export const historyRepo: HistoryRepository = USE_HTTP_API
-  ? new HttpHistoryRepository(API_BASE)
-  : new MockHistoryRepository(bookRepo)
+  const bookRepo = new MockBookRepository()
+  return {
+    bookRepo,
+    historyRepo: new MockHistoryRepository(bookRepo),
+  }
+}

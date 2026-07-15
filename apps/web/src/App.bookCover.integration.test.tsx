@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from './_components/app/App'
-import { bookRepo } from './_components/app/repositories'
+import { createTestDeps } from './test/testDeps'
 
 vi.mock('./_foundation/coverImageResize', () => ({
   resizeCoverImage: vi.fn((file: Blob) => Promise.resolve(file)),
@@ -33,11 +33,12 @@ describe('Home 表紙を撮影', () => {
 
   it('cover なしの外部書誌は撮影ボタンから登録し、アップロードまで到達する', async () => {
     const user = userEvent.setup()
-    const uploadSpy = vi.spyOn(bookRepo, 'uploadCoverImage')
+    const deps = createTestDeps()
+    const uploadSpy = vi.spyOn(deps.repositories.bookRepo, 'uploadCoverImage')
 
     render(
       <MemoryRouter>
-        <App />
+        <App {...deps} />
       </MemoryRouter>,
     )
     await screen.findByRole('heading', { name: /scan barcode/i })
@@ -68,7 +69,7 @@ describe('Home 表紙を撮影', () => {
 
     render(
       <MemoryRouter>
-        <App />
+        <App {...createTestDeps()} />
       </MemoryRouter>,
     )
     await screen.findByRole('heading', { name: /scan barcode/i })

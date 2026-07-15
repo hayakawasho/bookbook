@@ -7,9 +7,9 @@ export default mergeConfig(
   viteAppConfig,
   defineConfig({
     test: {
-      /** `.env.local` の `VITE_USE_HTTP_API=true` より優先し、既定はモックセッションで統合テストする */
+      /** `.env.local` の `VITE_APP_PROFILE=production` より優先し、既定はモックセッションで統合テストする */
       env: {
-        VITE_USE_HTTP_API: '',
+        VITE_APP_PROFILE: 'mock',
       },
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
