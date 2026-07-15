@@ -3,6 +3,7 @@ import { Book } from '../../_models/book'
 import { toBookInput, toExternalBookInfo } from './mappers'
 
 import type { Location } from '../../_foundation/const'
+import type { HttpClient } from '../../_foundation/http/client'
 import type { BookDto, ExternalBookDto } from '../../_models/book'
 import type { BookRepository, ExternalBookInfo, FindByIsbnResult } from '../../_usecases/book/ports'
 
@@ -11,13 +12,11 @@ type FindByIsbnJson =
   | { status: 'external'; book: ExternalBookDto }
 
 export class HttpBookRepository implements BookRepository {
-  constructor(private readonly baseUrl: string) {}
+  constructor(private readonly client: HttpClient) {}
 
   async findByIsbn(isbn: string, location: Location): Promise<FindByIsbnResult> {
     const params = new URLSearchParams({ location })
-    const res = await fetch(`${this.baseUrl}/books/${isbn}?${params}`, {
-      credentials: 'include',
-    })
+    const res = await this.client.request(`/books/${isbn}?${params}`)
 
     if (res.status === 404) {
       return { status: 'notfound' as const }
@@ -49,7 +48,7 @@ export class HttpBookRepository implements BookRepository {
 
   async findMany(query: string, location: Location): Promise<Book[]> {
     const params = new URLSearchParams({ q: query, location })
-    const res = await fetch(`${this.baseUrl}/books?${params}`, { credentials: 'include' })
+    const res = await this.client.request(`/books?${params}`)
 
     if (!res.ok) {
       throw new Error(`GET /books failed: ${res.status}`)
@@ -60,8 +59,7 @@ export class HttpBookRepository implements BookRepository {
   }
 
   async createItem(book: ExternalBookInfo, location: Location): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/books`, {
-      credentials: 'include',
+    const res = await this.client.request('/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...book, location }),
@@ -74,8 +72,7 @@ export class HttpBookRepository implements BookRepository {
   }
 
   async addCopy(isbn: string, location: Location): Promise<Book> {
-    const res = await fetch(`${this.baseUrl}/books/${isbn}/copies`, {
-      credentials: 'include',
+    const res = await this.client.request(`/books/${isbn}/copies`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ location }),
@@ -91,8 +88,7 @@ export class HttpBookRepository implements BookRepository {
 
   async deleteItem(isbn: string, location: Location): Promise<void> {
     const params = new URLSearchParams({ location })
-    const res = await fetch(`${this.baseUrl}/books/${isbn}?${params}`, {
-      credentials: 'include',
+    const res = await this.client.request(`/books/${isbn}?${params}`, {
       method: 'DELETE',
     })
 
@@ -102,8 +98,7 @@ export class HttpBookRepository implements BookRepository {
   }
 
   async uploadCoverImage(isbn: string, image: Blob): Promise<{ src: string }> {
-    const res = await fetch(`${this.baseUrl}/books/${isbn}/thumbnail`, {
-      credentials: 'include',
+    const res = await this.client.request(`/books/${isbn}/thumbnail`, {
       method: 'PUT',
       headers: { 'Content-Type': image.type || 'image/jpeg' },
       body: image,
