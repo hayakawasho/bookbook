@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { normalizeIsbnBarcode } from '../../../../_foundation/utils'
 import { useBookItem } from '../../../../_usecases/book'
-import { sheetModeAfterLookup } from '../lib/sheetModeAfterLookup'
+import { sheetModeAfterLookup } from '../logic/sheetModeAfterLookup'
 
 import type { SheetMode } from '../types'
 

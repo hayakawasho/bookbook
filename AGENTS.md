@@ -54,7 +54,7 @@ packages/utils  = 外部依存を持たない純粋 utility
 - ルーティングは React Router（declarative mode）。URL が画面状態の単一の真実（`/` → Home、`/library` → Library、`/history` → CheckoutHistory、`/settings/*` → Settings）。サブ状態も URL に載せる（`/history?tab=past`、`/library?q=`）
 - page / usecase は repository の具象実装ではなく `_usecases/**/ports.ts` の port に依存する。具象の生成・注入は `_components/app` に集約する
 - `ui` は文脈非依存。ドメイン型を props に持たず、`_repositories` / `_usecases` / `app` / `page` / `feature` を import しない
-- 画面固有の処理は `page/<Screen>/`（reader / usecase / mapper / `_internal/`）に閉じる。`index.tsx` はシェルのみ（目安 80 行以下）
+- 画面固有の処理は `page/<Screen>/`（`hooks/` / `logic/` / `_internal/`）に閉じる。`index.tsx` はシェルのみ（hooks の組み立て・配線、目安 80 行以下）
 - 複数 page / feature で共有する処理は `_usecases/<domain>` に置く
 - エラーは Result 型 + 早期リターンで表現する
 - サーバーデータのキャッシュは SWR に統一し、独自 store を作らない
@@ -62,7 +62,7 @@ packages/utils  = 外部依存を持たない純粋 utility
 ### テスト
 
 - 重要なユーザー導線は `apps/web` の統合テスト（RTL + Vitest, jsdom）で守る。UI 単体テストは大量に作らない
-- 純粋関数・変換・状態遷移（`_models` / `_usecases` / mapper）は Vitest 単体テスト
+- 純粋関数・変換・状態遷移（`_models` / `_usecases` / page の `logic/`）は Vitest 単体テスト
 - API モックは MSW ではなく `fetch` スタブ（`apps/web/src/test/stubAuthFetch.ts`）
 
 ## デザインルール

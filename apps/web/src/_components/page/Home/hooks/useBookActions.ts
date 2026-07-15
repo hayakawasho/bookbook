@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 
 import { useBookUsecase } from '../../../../_usecases/book'
 import { useAppState } from '../../../app'
-import { createBorrowAfterRegisterDialog } from '../lib/createBorrowAfterRegisterDialog'
+import { createBorrowAfterRegisterDialog } from '../logic/createBorrowAfterRegisterDialog'
 
 import { useCheckoutSound } from './useCheckoutSound'
 

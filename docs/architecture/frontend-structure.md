@@ -5,7 +5,7 @@
 ## 原則
 
 ```txt
-_components     = 何を画面に置くか。page は画面単位の reader / usecase / mapper / types を持てる
+_components     = 何を画面に置くか。page は画面単位の hooks / logic / types を持てる
 _models         = アプリケーション内で扱うドメイン概念（entity / value object / id）
 _usecases       = 複数 page / feature で共有する application usecase とその部品
 _repositories   = サーバー API（`/api/*`）の adapter
@@ -28,7 +28,7 @@ _components/app/** (composition root)
   → _components/page/** (画面シェル)
   → _repositories/** (具象 repository の生成は _components/app/repositories.ts の createRepositories で行い、main.tsx から注入する)
 
-_components/page/** (page reader / usecase)
+_components/page/** (page hooks / logic)
   → _usecases/**/ports.ts | queries.ts | commands.ts | policies.ts | mapper.ts | schema.ts
   → _models/**
   → _components/feature/** | ui/**
@@ -41,7 +41,7 @@ _repositories/**
 
 - ルーティングは React Router（declarative mode）。URL がタブ状態の単一の真実で、app root（`_components/app/App.tsx`）の `<Routes>` が URL に応じて `page/<Screen>` を切り替える
 - composition root は `_components/app`。具象 repository / gateway の生成・注入はここに集約する
-- page reader は repository port に依存し、repository 実装には依存しない
+- page hooks は repository port に依存し、repository 実装には依存しない
 - repository 実装は application 側の port を実装する adapter として扱う
 - `_usecases` は domain 単位（例: `book`）で切る。flow 名での分割は、既存 domain に収めると責務が曖昧になる場合だけ検討する
 - `_models` は `_usecases`, `_repositories`, `_components`, `_foundation` を知らない
@@ -73,17 +73,11 @@ _repositories/**
 特定 component 専用？
   → その component の _internal
 
-ページ固有の取得・合成・表示条件？
-  → _components/page/<Screen>/reader.ts
+ページ固有の取得・更新・デバイス制御などの画面 hook？
+  → _components/page/<Screen>/hooks/（関心単位で分割。組み立ては index.tsx）
 
-ページ固有の更新・実行系ユースケース？
-  → _components/page/<Screen>/usecase.ts
-
-ページ固有の UI props 変換？
-  → _components/page/<Screen>/mapper.ts
-
-画面 hook の組み立て？
-  → _components/page/<Screen>/useXxxScreen.ts（肥大化したら hooks/ に分割）
+画面 hook から切り出す純粋ロジック（状態遷移・変換・表示条件）？
+  → _components/page/<Screen>/logic/
 
 ドメイン概念（entity / value object / id）？
   → _models/<domain>
@@ -131,23 +125,34 @@ Context は関心ごとに分ける。
 
 タブ / 画面に対応する page module。`_components/app` が routing と依存注入を、`page/<Screen>` が画面内容の組み立てを担当する。
 
+構成として固定するのは次の2つだけ。それ以外のファイル構成は画面の複雑さに合わせ、必要になるまで作らない（Library / Login / Settings はこの最小形の実例）。
+
 ```txt
 page/<Screen>/            # PascalCase（Home / Library / CheckoutHistory / Settings / Login）
-  index.tsx               # 画面シェル（配線・組み立てのみ、目安 80 行以下）
-  useXxxScreen.ts         # 画面 hook の組み立て
-  reader.ts               # ページ固有の取得・合成・表示条件
-  usecase.ts              # ページ固有の更新・実行系ユースケース
-  mapper.ts               # usecase output → UI props 変換
-  types.ts                # 画面 UI props / ViewModel の型
+  index.tsx               # 画面シェル（hooks の組み立て・配線・モーダル表示制御のみ、目安 80 行以下）
   _internal/              # その画面だけの見た目（画面外から import しない）
 ```
 
-page reader / usecase のルール:
+分割が必要になったときは次の予約語彙を使う。どれを作るかは自由だが、名前は固定して画面ごとの方言を作らない（Home がフルに使う実例）:
 
-- repository の具象実装ではなく `_usecases/**/ports.ts` の port に依存する
+```txt
+  hooks/                  # 画面 hook。関心単位で分割し use<関心> と命名（例: useBookLookup / useBookActions）。画面名 prefix は付けない
+  logic/                  # hook から切り出した純粋ロジック（状態遷移・変換・表示条件。例: sheetModeAfterLookup）。テストは同居させる
+  types.ts                # 画面 UI props / ViewModel の型
+  constants.ts            # 画面内で共有する定数
+  store.ts                # 画面ローカル store（Store 節を参照）
+  <topic>/                # 画面固有インフラのコロケーション。ドメイン名で切る（例: barcode/。後述）
+```
+
+- `utils` / `helpers` / `common` / `lib` のような曖昧な置き場は page 配下にも作らない（`lib` はトップレベルの `_libs` = 外部ライブラリ adapter と紛れるため使わない）
+- 画面全体を1つに束ねる `useXxxScreen` は作らない。hook は取得・更新・デバイス制御など関心単位で分け、組み立ては `index.tsx` が担う
+
+境界ルール（ファイル構成によらず全画面で守る）:
+
+- repository の具象実装ではなく `_usecases/**/ports.ts` の port（`_usecases` の hook 経由を含む）に依存する
 - 複数 domain の port / query / command / policy を合成してよい
 - 外部 API の endpoint, query string, response 型などの詳細を持たない
-- UI class / JSX / CSS 都合の整形は `mapper.ts` に寄せる
+- 判断・状態遷移・変換は純粋関数（`logic/`）に切り出し、単体テスト可能に保つ
 - 複数 page / feature で共有される取得・検証・更新・判断は `_usecases/**` へ切り出す
 
 `index.tsx` の責務:
@@ -272,7 +277,7 @@ UI やページ文脈を持たない、画面表現を成立させる基盤。
 
 低コスト高効果を優先し、重要なユーザー導線を `apps/web` の統合テスト（React Testing Library + Vitest、`environment: 'jsdom'`）中心で守る。UI 単体テストは大量に作らない。
 
-- 純粋関数・変換・状態遷移（`_models` / `_usecases` / mapper）→ Vitest 単体テスト
+- 純粋関数・変換・状態遷移（`_models` / `_usecases` / page の `logic/`）→ Vitest 単体テスト
 - 見た目の状態差分 → 必要に応じて Storybook（`_components/ui` から追加）
 - 実ブラウザ依存の確認 → 少数の E2E に絞る
 
