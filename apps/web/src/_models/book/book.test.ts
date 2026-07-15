@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { Book } from '../book/book'
-import { toBookId } from '../book/ids'
 import { History } from '../history/history'
 import { toHistoryId } from '../history/ids'
+import { expectImmutableMutation } from '../testing/expectImmutableMutation'
 
-import { expectImmutableMutation } from './expectImmutableMutation'
+import { Book } from './book'
+import { toBookId } from './ids'
 
 function sampleBook(overrides: Partial<Parameters<typeof Book.create>[0]> = {}) {
   return Book.create({

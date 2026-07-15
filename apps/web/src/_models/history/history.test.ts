@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { History } from '../history/history'
-import { toHistoryId } from '../history/ids'
+import { expectImmutableMutation } from '../testing/expectImmutableMutation'
 
-import { expectImmutableMutation } from './expectImmutableMutation'
+import { History } from './history'
+import { toHistoryId } from './ids'
 
 function sampleHistory(overrides: Partial<Parameters<typeof History.create>[0]> = {}) {
   return History.create({
