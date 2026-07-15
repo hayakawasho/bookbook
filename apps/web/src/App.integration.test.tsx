@@ -47,5 +47,15 @@ describe('App', () => {
       expect(within(banner).getByText('貸出履歴')).toBeInTheDocument()
       expect(screen.getByText('借りている本')).toBeInTheDocument()
     })
+
+    it('/history?tab=past の直リンクで「これまで借りた本」が表示される', async () => {
+      render(
+        <MemoryRouter initialEntries={['/history?tab=past']}>
+          <App />
+        </MemoryRouter>,
+      )
+
+      expect(await screen.findByText('社内の本を借りてみよう！')).toBeInTheDocument()
+    })
   })
 })

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useSearchParams } from 'react-router'
 
 import { History } from '../../../_models/history'
 import { useBorrowingItems, useHistoryItems } from '../../../_usecases/history'
@@ -15,8 +16,13 @@ import type { HistorySubTab, ToastState } from './types'
 
 export function CheckoutHistoryScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [historySubTab, setHistorySubTab] = useState<HistorySubTab>('borrowing')
+  const [searchParams, setSearchParams] = useSearchParams()
   const [toast, setToast] = useState<ToastState>(null)
+
+  const historySubTab: HistorySubTab = searchParams.get('tab') === 'past' ? 'past' : 'borrowing'
+  const setHistorySubTab = (tab: HistorySubTab) => {
+    setSearchParams(tab === 'past' ? { tab: 'past' } : {}, { replace: true })
+  }
 
   const showToast = useCallback(
     (message: string, type: 'success' | 'error', action?: NonNullable<ToastState>['action']) => {
