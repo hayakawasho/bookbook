@@ -22,7 +22,7 @@ flowchart TD
 
 ### Composition Root
 
-環境の解決は `_components/app/config.ts` の純関数 `resolveAppConfig`（`VITE_APP_PROFILE` による名前付きプロファイル `production` / `mock`。不明値は throw、未設定は dev のみ mock にフォールバックし本番ビルドでは throw）、具象 repository / gateway の生成は `repositories.ts` の `createRepositories(config)` に集約する。プロファイルは常に整合した完全な構成を生成し、repo 単位の部分差し替えはしない（book / history は参照整合性で結合しているため）。組み立ては `main.tsx` で1回だけ行い、`<App config repositories>` の props → `AppProviders` → Context で注入する。usecase / page は port（抽象）にのみ依存する。Http repository は fetch を直接呼ばず `_foundation/http/client.ts` の `HttpClient` を注入され、横断関心事（認証・リトライ等）は client のデコレータとして root で合成する。
+環境の解決は `_components/app/config.ts` の純関数 `resolveAppConfig`（`VITE_APP_PROFILE` による名前付きプロファイル `production` / `mock`。不明値は throw、未設定は dev のみ mock にフォールバックし本番ビルドでは throw）、具象 repository / gateway の生成は `repositories.ts` の `createRepositories(config)` に集約する。プロファイルは常に整合した完全な構成を生成し、repo 単位の部分差し替えはしない（book / history は参照整合性で結合しているため）。組み立ては `main.tsx` で1回だけ行い、`<App config repositories>` の props → `AppProviders` → Context で注入する。usecase / page は port（抽象）にのみ依存する。`Repositories` のキーは具象クラスではなく port（能力）単位とし、1つの具象が複数 port を実装する場合も同一インスタンスを port 別のキーで公開して root に閉じる。Http repository は fetch を直接呼ばず `_foundation/http/client.ts` の `HttpClient` を注入され、横断関心事（認証・リトライ等）は client のデコレータとして root で合成する。
 
 ### ルーティング
 
