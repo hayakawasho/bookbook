@@ -1,28 +1,23 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { App } from './_components/app/App'
 import { stubAuthFetchAuthorized, stubAuthFetchUnauthorized } from './test/stubAuthFetch'
+import { createTestDeps } from './test/testDeps'
 
 describe('App', () => {
   describe('HTTP API', () => {
-    beforeEach(() => {
-      vi.resetModules()
-      vi.stubEnv('VITE_USE_HTTP_API', 'true')
-    })
-
     afterEach(() => {
       vi.unstubAllGlobals()
-      vi.unstubAllEnvs()
     })
 
     it('/auth/me が未認証のときログイン画面を表示する', async () => {
       stubAuthFetchUnauthorized()
-      const { App } = await import('./_components/app/App')
       render(
         <MemoryRouter>
-          <App />
+          <App {...createTestDeps('production')} />
         </MemoryRouter>,
       )
 
@@ -31,10 +26,9 @@ describe('App', () => {
 
     it('/auth/me が成功したときメインアプリを表示する', async () => {
       stubAuthFetchAuthorized()
-      const { App } = await import('./_components/app/App')
       render(
         <MemoryRouter>
-          <App />
+          <App {...createTestDeps('production')} />
         </MemoryRouter>,
       )
 
@@ -44,10 +38,9 @@ describe('App', () => {
     it('設定画面のログアウトからログイン画面に戻る', async () => {
       stubAuthFetchAuthorized()
       const user = userEvent.setup()
-      const { App } = await import('./_components/app/App')
       render(
         <MemoryRouter>
-          <App />
+          <App {...createTestDeps('production')} />
         </MemoryRouter>,
       )
 

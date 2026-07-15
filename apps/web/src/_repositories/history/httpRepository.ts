@@ -3,10 +3,11 @@ import { History } from '../../_models/history'
 import { type HistoryWire, toHistoryInput } from './mappers'
 
 import type { Location } from '../../_foundation/const'
+import type { HttpClient } from '../../_foundation/http/client'
 import type { HistoryQuery, HistoryRepository } from '../../_usecases/history/ports'
 
 export class HttpHistoryRepository implements HistoryRepository {
-  constructor(private readonly baseUrl: string) {}
+  constructor(private readonly client: HttpClient) {}
 
   async findMany(query: HistoryQuery, location: Location): Promise<History[]> {
     const params = new URLSearchParams({ location })
@@ -15,7 +16,7 @@ export class HttpHistoryRepository implements HistoryRepository {
       params.set('isDone', String(query.isDone))
     }
 
-    const res = await fetch(`${this.baseUrl}/history?${params}`, { credentials: 'include' })
+    const res = await this.client.request(`/history?${params}`)
 
     if (!res.ok) {
       throw new Error(`GET /history failed: ${res.status}`)
@@ -26,8 +27,7 @@ export class HttpHistoryRepository implements HistoryRepository {
   }
 
   async createItem(isbn: string, location: Location): Promise<History> {
-    const res = await fetch(`${this.baseUrl}/history`, {
-      credentials: 'include',
+    const res = await this.client.request('/history', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isbn, location }),
@@ -42,8 +42,7 @@ export class HttpHistoryRepository implements HistoryRepository {
   }
 
   async returnItem(historyId: string, location: Location): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/history/${historyId}`, {
-      credentials: 'include',
+    const res = await this.client.request(`/history/${historyId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ location }),
@@ -55,8 +54,7 @@ export class HttpHistoryRepository implements HistoryRepository {
   }
 
   async undoReturnItem(historyId: string, location: Location): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/history/${historyId}`, {
-      credentials: 'include',
+    const res = await this.client.request(`/history/${historyId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ location, intent: 'undo-return' }),

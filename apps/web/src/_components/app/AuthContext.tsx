@@ -1,7 +1,6 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react'
 
-const USE_HTTP_API = import.meta.env.VITE_USE_HTTP_API === 'true'
-const API_BASE = '/api'
+export type AuthMode = 'http' | 'mock'
 
 export type CurrentUser = {
   email: string
@@ -18,14 +17,21 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+type AuthProviderProps = {
+  mode: AuthMode
+  apiBase: string
+  children: ReactNode
+}
+
+export function AuthProvider({ mode, apiBase, children }: AuthProviderProps) {
+  const useHttp = mode === 'http'
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() =>
-    USE_HTTP_API ? null : { email: 'mock@local.dev', name: 'Mock' },
+    useHttp ? null : { email: 'mock@local.dev', name: 'Mock' },
   )
-  const [authLoading, setAuthLoading] = useState(() => USE_HTTP_API)
+  const [authLoading, setAuthLoading] = useState(() => useHttp)
 
   useEffect(() => {
-    if (!USE_HTTP_API) {
+    if (!useHttp) {
       return
     }
 
@@ -33,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ;(async () => {
       setAuthLoading(true)
       try {
-        const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' })
+        const res = await fetch(`${apiBase}/auth/me`, { credentials: 'include' })
         if (cancelled) {
           return
         }
@@ -59,19 +65,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [useHttp, apiBase])
 
   const login = () => {
-    window.location.href = '/api/auth/google/start'
+    window.location.href = `${apiBase}/auth/google/start`
   }
 
   const logout = async () => {
-    if (!USE_HTTP_API) {
+    if (!useHttp) {
       return
     }
 
     try {
-      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' })
+      await fetch(`${apiBase}/auth/logout`, { method: 'POST', credentials: 'include' })
     } catch {
       /* network errors: still clear local session UX */
     }

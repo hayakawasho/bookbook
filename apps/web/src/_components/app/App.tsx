@@ -11,6 +11,9 @@ import { useAuth } from './AuthContext'
 import { BottomTabs } from './BottomTabs'
 import './App.css'
 
+import type { AppConfig } from './config'
+import type { Repositories } from './repositories'
+
 function AppContent() {
   const { authLoading, currentUser, login } = useAuth()
 
@@ -40,9 +43,14 @@ function AppContent() {
   )
 }
 
-export function App() {
+export type AppProps = {
+  config: AppConfig
+  repositories: Repositories
+}
+
+export function App({ config, repositories }: AppProps) {
   return (
-    <AppProviders>
+    <AppProviders config={config} repositories={repositories}>
       <AppContent />
     </AppProviders>
   )

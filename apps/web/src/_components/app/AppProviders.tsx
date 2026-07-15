@@ -4,28 +4,45 @@ import { UsecaseDepsProvider } from '../../_usecases/deps'
 
 import { AppStateProvider, useAppState } from './AppStateContext'
 import { AuthProvider } from './AuthContext'
-import { bookRepo, historyRepo } from './repositories'
 
-function UsecaseDepsBridge({ children }: { children: ReactNode }) {
+import type { AppConfig } from './config'
+import type { Repositories } from './repositories'
+
+function UsecaseDepsBridge({
+  repositories,
+  children,
+}: {
+  repositories: Repositories
+  children: ReactNode
+}) {
   const { state } = useAppState()
 
   const deps = useMemo(
     () => ({
-      bookRepo,
-      historyRepo,
+      ...repositories,
       location: state.location,
     }),
-    [state.location],
+    [repositories, state.location],
   )
 
   return <UsecaseDepsProvider value={deps}>{children}</UsecaseDepsProvider>
 }
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export function AppProviders({
+  config,
+  repositories,
+  children,
+}: {
+  config: AppConfig
+  repositories: Repositories
+  children: ReactNode
+}) {
+  const authMode = config.profile === 'production' ? 'http' : 'mock'
+
   return (
-    <AuthProvider>
+    <AuthProvider mode={authMode} apiBase={config.apiBase}>
       <AppStateProvider>
-        <UsecaseDepsBridge>{children}</UsecaseDepsBridge>
+        <UsecaseDepsBridge repositories={repositories}>{children}</UsecaseDepsBridge>
       </AppStateProvider>
     </AuthProvider>
   )

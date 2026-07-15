@@ -4,10 +4,15 @@ import { BrowserRouter } from 'react-router'
 import { SWRConfig } from 'swr'
 
 import { App } from './_components/app/App.tsx'
+import { resolveAppConfig } from './_components/app/config.ts'
+import { createRepositories } from './_components/app/repositories.ts'
 import './index.css'
 import { registerServiceWorker } from './registerServiceWorker'
 
 registerServiceWorker()
+
+const config = resolveAppConfig(import.meta.env)
+const repositories = createRepositories(config)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -22,7 +27,7 @@ createRoot(document.getElementById('root')!).render(
       }}
     >
       <BrowserRouter>
-        <App />
+        <App config={config} repositories={repositories} />
       </BrowserRouter>
     </SWRConfig>
   </StrictMode>,
