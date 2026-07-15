@@ -26,7 +26,7 @@ flowchart TD
 
 ### ルーティング
 
-React Router は使わず、タブ状態を `_components/app` の `AppStateContext` に持つシングルページ構成。app root がタブに応じて `page/<Screen>` を切り替える。
+React Router（declarative mode, `react-router`）を使い、URL をタブ状態の単一の真実とする。app root（`_components/app/App.tsx`）の `<Routes>` が `/`（Home）・`/library`（Library）・`/history`（CheckoutHistory）を出し分け、`BottomTabs` は `NavLink` で遷移する。未知パスは `/` へリダイレクト。認証ガード（未ログイン時 `LoginScreen`）は Routes の外側で行う。
 
 ### エラーハンドリング
 

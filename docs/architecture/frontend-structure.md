@@ -39,7 +39,7 @@ _repositories/**
   → _libs/** | _foundation/**
 ```
 
-- ルーティングは React Router ではなく、タブ状態を `_components/app` の Context に持つシングルページ構成。app root がタブに応じて `page/<Screen>` を切り替える
+- ルーティングは React Router（declarative mode）。URL がタブ状態の単一の真実で、app root（`_components/app/App.tsx`）の `<Routes>` が URL に応じて `page/<Screen>` を切り替える
 - composition root は `_components/app`。具象 repository / gateway の生成・注入はここに集約する
 - page reader は repository port に依存し、repository 実装には依存しない
 - repository 実装は application 側の port を実装する adapter として扱う
