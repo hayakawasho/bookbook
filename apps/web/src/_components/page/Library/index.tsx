@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 
 import { useBookItems } from '../../../_usecases/book'
 import { Header } from '../../ui/Header'
@@ -9,8 +10,13 @@ import { LibraryListBody } from './_internal/LibraryListBody'
 import { LibrarySearchBar } from './_internal/LibrarySearchBar'
 
 export function LibraryScreen() {
-  const [query, setQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const query = searchParams.get('q') ?? ''
+  const setQuery = (q: string) => {
+    setSearchParams(q ? { q } : {}, { replace: true })
+  }
 
   const { data: books = [], isLoading, error } = useBookItems(query)
 

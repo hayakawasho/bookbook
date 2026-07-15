@@ -48,6 +48,18 @@ describe('App', () => {
       expect(screen.getByText('借りている本')).toBeInTheDocument()
     })
 
+    it('/library?q= の直リンクで検索クエリが適用される', async () => {
+      render(
+        <MemoryRouter initialEntries={['/library?q=リーダブル']}>
+          <App />
+        </MemoryRouter>,
+      )
+
+      expect(await screen.findByLabelText('本棚を検索')).toHaveValue('リーダブル')
+      expect(await screen.findByText('リーダブルコード')).toBeInTheDocument()
+      expect(screen.queryByText('テスト駆動開発')).not.toBeInTheDocument()
+    })
+
     it('/history?tab=past の直リンクで「これまで借りた本」が表示される', async () => {
       render(
         <MemoryRouter initialEntries={['/history?tab=past']}>
