@@ -26,7 +26,7 @@ flowchart TD
 
 ### ルーティング
 
-React Router（declarative mode, `react-router`）を使い、URL をタブ状態の単一の真実とする。app root（`_components/app/App.tsx`）の `<Routes>` が `/`（Home）・`/library`（Library）・`/history`（CheckoutHistory）を出し分け、`BottomTabs` は `NavLink` で遷移する。未知パスは `/` へリダイレクト。認証ガード（未ログイン時 `LoginScreen`）は Routes の外側で行う。
+React Router（declarative mode, `react-router`）を使い、URL を画面状態の単一の真実とする。app root（`_components/app/App.tsx`）の `<Routes>` が `/`（Home）・`/library`（Library）・`/history`（CheckoutHistory）・`/settings/*`（Settings、page 内のネスト Routes で `location` / `volume` サブ画面を出し分け）を切り替え、`BottomTabs` は `NavLink` で遷移する。サブ状態は search param に載せる（`/history?tab=past`、`/library?q=`、書き込みは `replace: true` で履歴を汚さない）。未知パスは `/` へリダイレクト。認証ガード（未ログイン時 `LoginScreen`）は Routes の外側で行う。設定の「戻る」は `navigate(-1)` + 直リンク時 fallback（`page/Settings/_internal/useBackWithFallback.ts`）。
 
 ### エラーハンドリング
 

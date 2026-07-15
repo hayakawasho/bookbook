@@ -51,7 +51,7 @@ packages/utils  = 外部依存を持たない純粋 utility
 
 ### 主要ルール
 
-- ルーティングは React Router（declarative mode）。URL がタブ状態の単一の真実（`/` → Home、`/library` → Library、`/history` → CheckoutHistory）
+- ルーティングは React Router（declarative mode）。URL が画面状態の単一の真実（`/` → Home、`/library` → Library、`/history` → CheckoutHistory、`/settings/*` → Settings）。サブ状態も URL に載せる（`/history?tab=past`、`/library?q=`）
 - page / usecase は repository の具象実装ではなく `_usecases/**/ports.ts` の port に依存する。具象の生成・注入は `_components/app` に集約する
 - `ui` は文脈非依存。ドメイン型を props に持たず、`_repositories` / `_usecases` / `app` / `page` / `feature` を import しない
 - 画面固有の処理は `page/<Screen>/`（reader / usecase / mapper / `_internal/`）に閉じる。`index.tsx` はシェルのみ（目安 80 行以下）

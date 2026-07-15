@@ -30,7 +30,7 @@
 | 単体・統合テスト   | Vitest 3 + jsdom、React Testing Library、`@testing-library/jest-dom` | `apps/web/vitest.config.ts`、`src/test/setup.ts` |
 | UI カタログ（任意） | Storybook 10（Vite builder） | `apps/web` に配置、`npm run storybook -w @bookbook/web` |
 
-ルーティングは **React Router（declarative mode, `react-router`）**。URL をタブ状態の単一の真実とし、`_components/app` の `App.tsx` が `<Routes>` で `page/<Screen>` を出し分け、`BottomTabs` は `NavLink` で遷移する。SPA fallback は Vite dev（標準）と本番 Worker（`wrangler.jsonc` の `not_found_handling: "single-page-application"`）の両方で有効。
+ルーティングは **React Router（declarative mode, `react-router`）**。URL を画面状態の単一の真実とし、`_components/app` の `App.tsx` が `<Routes>` で `page/<Screen>` を出し分け（`/settings/*` は page 内ネスト Routes）、`BottomTabs` は `NavLink` で遷移する。サブ状態も search param で持つ（`/history?tab=past`、`/library?q=`）。SPA fallback は Vite dev（標準）と本番 Worker（`wrangler.jsonc` の `not_found_handling: "single-page-application"`）の両方で有効。
 
 フロントから API へのパスは **`/api` 固定**（例: `API_BASE = '/api'`）。Cookie 認証のため **本番でも同一オリジンで `/api/*` が API に届く**ようにインフラを組む前提とする。
 
