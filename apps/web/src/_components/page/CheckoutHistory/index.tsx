@@ -1,12 +1,11 @@
 import { useCallback, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import { History } from '../../../_models/history'
 import { useBorrowingItems, useHistoryItems } from '../../../_usecases/history'
 import { Header } from '../../ui/Header'
 import { IconCog } from '../../ui/icon'
 import { Toast } from '../../ui/Toast'
-import { SettingsScreen } from '../Settings'
 
 import { HistoryList } from './_internal/HistoryList'
 import { HistorySubTabs } from './_internal/HistorySubTabs'
@@ -15,9 +14,9 @@ import { useReturnBook } from './hooks/useReturnBook'
 import type { HistorySubTab, ToastState } from './types'
 
 export function CheckoutHistoryScreen() {
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const [toast, setToast] = useState<ToastState>(null)
+  const navigate = useNavigate()
 
   const historySubTab: HistorySubTab = searchParams.get('tab') === 'past' ? 'past' : 'borrowing'
   const setHistorySubTab = (tab: HistorySubTab) => {
@@ -37,10 +36,6 @@ export function CheckoutHistoryScreen() {
 
   const handleReturn = useReturnBook({ showToast })
 
-  if (settingsOpen) {
-    return <SettingsScreen onBack={() => setSettingsOpen(false)} />
-  }
-
   return (
     <div
       className={`flex flex-col ${borrowing.length === 0 || returned.length === 0 ? 'h-full' : ''}`}
@@ -51,7 +46,7 @@ export function CheckoutHistoryScreen() {
           <button
             type="button"
             className="flex items-center justify-center w-[44px] h-[44px] bg-transparent border-0 cursor-pointer text-primary p-0"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => navigate('/settings')}
             aria-label="設定"
           >
             <IconCog size={22} />

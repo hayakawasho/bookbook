@@ -1,17 +1,15 @@
-import { useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import { useBookItems } from '../../../_usecases/book'
 import { Header } from '../../ui/Header'
 import { IconCog } from '../../ui/icon'
-import { SettingsScreen } from '../Settings'
 
 import { LibraryListBody } from './_internal/LibraryListBody'
 import { LibrarySearchBar } from './_internal/LibrarySearchBar'
 
 export function LibraryScreen() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const navigate = useNavigate()
 
   const query = searchParams.get('q') ?? ''
   const setQuery = (q: string) => {
@@ -19,10 +17,6 @@ export function LibraryScreen() {
   }
 
   const { data: books = [], isLoading, error } = useBookItems(query)
-
-  if (settingsOpen) {
-    return <SettingsScreen onBack={() => setSettingsOpen(false)} />
-  }
 
   const isEmptyLayout = books.length === 0
 
@@ -34,7 +28,7 @@ export function LibraryScreen() {
           <button
             type="button"
             className="flex items-center justify-center w-[44px] h-[44px] bg-transparent border-0 cursor-pointer text-primary p-0"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => navigate('/settings')}
             aria-label="設定"
           >
             <IconCog size={22} />

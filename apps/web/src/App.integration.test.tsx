@@ -69,5 +69,23 @@ describe('App', () => {
 
       expect(await screen.findByText('社内の本を借りてみよう！')).toBeInTheDocument()
     })
+
+    it('設定を開いて戻ると元のタブに戻る', async () => {
+      const user = userEvent.setup()
+      render(
+        <MemoryRouter>
+          <App />
+        </MemoryRouter>,
+      )
+      await screen.findByRole('heading', { name: /scan barcode/i })
+
+      const nav = screen.getByRole('navigation', { name: 'タブナビゲーション' })
+      await user.click(within(nav).getByText('貸出履歴'))
+      await user.click(await screen.findByRole('button', { name: '設定' }))
+      await user.click(await screen.findByRole('button', { name: '戻る' }))
+
+      const banner = await screen.findByRole('banner')
+      expect(within(banner).getByText('貸出履歴')).toBeInTheDocument()
+    })
   })
 })

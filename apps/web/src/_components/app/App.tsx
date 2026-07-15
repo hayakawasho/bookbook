@@ -4,6 +4,7 @@ import { CheckoutHistoryScreen } from '../page/CheckoutHistory'
 import { HomeScreen } from '../page/Home'
 import { LibraryScreen } from '../page/Library'
 import { LoginScreen } from '../page/Login'
+import { SettingsScreen } from '../page/Settings'
 
 import { AppProviders } from './AppProviders'
 import { useAuth } from './AuthContext'
@@ -30,6 +31,7 @@ function AppContent() {
           <Route path="/" element={<HomeScreen />} />
           <Route path="/library" element={<LibraryScreen />} />
           <Route path="/history" element={<CheckoutHistoryScreen />} />
+          <Route path="/settings/*" element={<SettingsScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
