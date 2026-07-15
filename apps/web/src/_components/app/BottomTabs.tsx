@@ -1,3 +1,5 @@
+import { NavLink } from 'react-router'
+
 import {
   IconAccount,
   IconAccountFilled,
@@ -7,12 +9,14 @@ import {
   IconLibraryFilled,
 } from '../ui/icon'
 
-import { type AppTab, useAppState } from './AppStateContext'
+import { useAppState } from './AppStateContext'
 
-const TABS: { id: AppTab; label: string }[] = [
-  { id: 'home', label: 'ホーム' },
-  { id: 'library', label: '本棚' },
-  { id: 'checkoutHistory', label: '貸出履歴' },
+type TabId = 'home' | 'library' | 'checkoutHistory'
+
+const TABS: { id: TabId; path: string; label: string }[] = [
+  { id: 'home', path: '/', label: 'ホーム' },
+  { id: 'library', path: '/library', label: '本棚' },
+  { id: 'checkoutHistory', path: '/history', label: '貸出履歴' },
 ]
 
 function TabPrimaryIcon({
@@ -20,7 +24,7 @@ function TabPrimaryIcon({
   active,
   cutoutBg,
 }: {
-  tabId: AppTab
+  tabId: TabId
   active: boolean
   cutoutBg: string
 }) {
@@ -34,7 +38,7 @@ function TabPrimaryIcon({
 }
 
 export function BottomTabs() {
-  const { state, dispatch } = useAppState()
+  const { state } = useAppState()
   const cutoutBg = state.themeMode === 'dark' ? '#000000' : '#FFFFFF'
 
   return (
@@ -43,29 +47,31 @@ export function BottomTabs() {
       style={{ height: 'calc(70px + env(safe-area-inset-bottom, 0px))' }}
       aria-label="タブナビゲーション"
     >
-      {TABS.map((tab) => {
-        const active = state.activeTab === tab.id
-        const iconTone = active ? 'text-primary' : 'text-middle'
-
-        return (
-          <button
-            key={tab.id}
-            className="flex-1 flex flex-col items-center justify-center gap-1 bg-transparent border-0 cursor-pointer p-0 min-w-0"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-            onClick={() => dispatch({ type: 'SET_TAB', payload: tab.id })}
-            aria-current={active ? 'page' : undefined}
-          >
-            <span className={`block [&_svg]:block ${iconTone}`} aria-hidden>
-              <TabPrimaryIcon tabId={tab.id} active={active} cutoutBg={cutoutBg} />
-            </span>
-            <span
-              className={`text-xs leading-[18px] truncate max-w-full px-0.5 ${active ? 'font-semibold text-primary' : 'font-light text-middle'}`}
-            >
-              {tab.label}
-            </span>
-          </button>
-        )
-      })}
+      {TABS.map((tab) => (
+        <NavLink
+          key={tab.id}
+          to={tab.path}
+          end={tab.path === '/'}
+          className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer min-w-0"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          {({ isActive }) => (
+            <>
+              <span
+                className={`block [&_svg]:block ${isActive ? 'text-primary' : 'text-middle'}`}
+                aria-hidden
+              >
+                <TabPrimaryIcon tabId={tab.id} active={isActive} cutoutBg={cutoutBg} />
+              </span>
+              <span
+                className={`text-xs leading-[18px] truncate max-w-full px-0.5 ${isActive ? 'font-semibold text-primary' : 'font-light text-middle'}`}
+              >
+                {tab.label}
+              </span>
+            </>
+          )}
+        </NavLink>
+      ))}
     </nav>
   )
 }

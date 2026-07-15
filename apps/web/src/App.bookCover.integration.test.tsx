@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from './_components/app/App'
@@ -34,7 +35,11 @@ describe('Home 表紙を撮影', () => {
     const user = userEvent.setup()
     const uploadSpy = vi.spyOn(bookRepo, 'uploadCoverImage')
 
-    render(<App />)
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
     await screen.findByRole('heading', { name: /scan barcode/i })
 
     await searchByIsbn(user, NO_COVER_ISBN)
@@ -61,7 +66,11 @@ describe('Home 表紙を撮影', () => {
   it('cover ありの外部書誌では撮影ボタンが表示されない', async () => {
     const user = userEvent.setup()
 
-    render(<App />)
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
     await screen.findByRole('heading', { name: /scan barcode/i })
 
     await searchByIsbn(user, HAS_COVER_ISBN)

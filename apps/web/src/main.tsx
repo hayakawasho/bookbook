@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router'
 import { SWRConfig } from 'swr'
 
 import { App } from './_components/app/App.tsx'
@@ -20,7 +21,9 @@ createRoot(document.getElementById('root')!).render(
         shouldRetryOnError: false,
       }}
     >
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </SWRConfig>
   </StrictMode>,
 )

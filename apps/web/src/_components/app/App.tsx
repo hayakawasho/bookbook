@@ -1,28 +1,17 @@
+import { Navigate, Route, Routes } from 'react-router'
+
 import { CheckoutHistoryScreen } from '../page/CheckoutHistory'
 import { HomeScreen } from '../page/Home'
 import { LibraryScreen } from '../page/Library'
 import { LoginScreen } from '../page/Login'
 
 import { AppProviders } from './AppProviders'
-import { type AppTab, useAppState } from './AppStateContext'
 import { useAuth } from './AuthContext'
 import { BottomTabs } from './BottomTabs'
 import './App.css'
 
-function ActiveTabPanel({ tab }: { tab: AppTab }) {
-  switch (tab) {
-    case 'home':
-      return <HomeScreen />
-    case 'library':
-      return <LibraryScreen />
-    case 'checkoutHistory':
-      return <CheckoutHistoryScreen />
-  }
-}
-
 function AppContent() {
   const { authLoading, currentUser, login } = useAuth()
-  const { state } = useAppState()
 
   if (authLoading) {
     return (
@@ -37,7 +26,12 @@ function AppContent() {
   return (
     <div className="w-full max-w-[430px] mx-auto h-dvh flex flex-col bg-background relative text-text">
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[70px]">
-        <ActiveTabPanel tab={state.activeTab} />
+        <Routes>
+          <Route path="/" element={<HomeScreen />} />
+          <Route path="/library" element={<LibraryScreen />} />
+          <Route path="/history" element={<CheckoutHistoryScreen />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
       <BottomTabs />
     </div>

@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { stubAuthFetchAuthorized, stubAuthFetchUnauthorized } from './test/stubAuthFetch'
@@ -19,7 +20,11 @@ describe('App', () => {
     it('/auth/me が未認証のときログイン画面を表示する', async () => {
       stubAuthFetchUnauthorized()
       const { App } = await import('./_components/app/App')
-      render(<App />)
+      render(
+        <MemoryRouter>
+          <App />
+        </MemoryRouter>,
+      )
 
       expect(await screen.findByRole('button', { name: /googleでログイン/i })).toBeInTheDocument()
     })
@@ -27,7 +32,11 @@ describe('App', () => {
     it('/auth/me が成功したときメインアプリを表示する', async () => {
       stubAuthFetchAuthorized()
       const { App } = await import('./_components/app/App')
-      render(<App />)
+      render(
+        <MemoryRouter>
+          <App />
+        </MemoryRouter>,
+      )
 
       expect(await screen.findByRole('heading', { name: /scan barcode/i })).toBeInTheDocument()
     })
@@ -36,7 +45,11 @@ describe('App', () => {
       stubAuthFetchAuthorized()
       const user = userEvent.setup()
       const { App } = await import('./_components/app/App')
-      render(<App />)
+      render(
+        <MemoryRouter>
+          <App />
+        </MemoryRouter>,
+      )
 
       await screen.findByRole('heading', { name: /scan barcode/i })
       const nav = screen.getByRole('navigation', { name: 'タブナビゲーション' })
