@@ -9,7 +9,8 @@ storybook-static
 .env.production
 
 apps/mobile
-docs/plan
+plan
+plans
 
 # Cloudflare Worker ローカル開発用シークレット（コミット禁止）
 .dev.vars
