@@ -86,7 +86,7 @@ export function HomeExternalBookSheet({
                 onClick={() => fileInputRef.current?.click()}
               >
                 <IconPhotoCamera size={28} />
-                <span className="text-xs font-semibold leading-[17px]">表紙を撮影</span>
+                <span className="text-xs text-text-muted">表紙を撮影</span>
               </button>
             ) : undefined
           }
