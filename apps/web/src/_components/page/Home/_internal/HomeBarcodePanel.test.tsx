@@ -6,6 +6,7 @@ import { HomeBarcodePanel } from './HomeBarcodePanel'
 const baseProps = {
   cameraElementId: 'scanner',
   cameraOpen: true,
+  isDetecting: false,
   isbnInput: '',
   notFound: false,
   onChangeIsbnInput: vi.fn(),
@@ -23,5 +24,11 @@ describe('HomeBarcodePanel', () => {
     const { container } = render(<HomeBarcodePanel {...baseProps} cameraOpen={false} />)
 
     expect(container.querySelector('.barcode-scan-guide')).not.toBeInTheDocument()
+  })
+
+  it('バーコード候補の検出中はスキャン枠を反応させる', () => {
+    const { container } = render(<HomeBarcodePanel {...baseProps} isDetecting />)
+
+    expect(container.querySelector('.barcode-scan-guide')).toHaveClass('is-detecting')
   })
 })

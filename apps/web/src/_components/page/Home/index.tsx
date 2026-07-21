@@ -24,6 +24,7 @@ export function HomeScreen() {
     },
     [],
   )
+  const clearToast = useCallback(() => setToast(null), [])
 
   const lookup = useBookLookup({ showToast })
   const coverCapture = useCoverCapture()
@@ -31,6 +32,7 @@ export function HomeScreen() {
   const capture = useBarcodeCapture({
     onCapture: lookup.lookupByBarcodeRaw,
     scanBlockedRef: lookup.scanBlockedRef,
+    clearToast,
     showToast,
   })
 
@@ -64,6 +66,7 @@ export function HomeScreen() {
           <HomeBarcodePanel
             cameraElementId={HOME_BARCODE_CAMERA_ELEMENT_ID}
             cameraOpen={capture.cameraOpen}
+            isDetecting={capture.isDetecting}
             isbnInput={lookup.isbnInput}
             notFound={lookup.notFound}
             onChangeIsbnInput={lookup.handleChangeIsbnInput}
