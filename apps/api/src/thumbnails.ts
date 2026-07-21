@@ -15,6 +15,34 @@ export function isSelfThumbnailSrc(src: string | undefined): boolean {
   return src !== undefined && src.startsWith('/api/thumbnails/')
 }
 
+/** 書誌 API が返しうる表紙ホスト（archive.org は Open Library のリダイレクト先） */
+const ALLOWED_COVER_HOST_SUFFIXES = [
+  'openbd.jp',
+  'rakuten.co.jp',
+  'google.com',
+  'googleusercontent.com',
+  'openlibrary.org',
+  'archive.org',
+]
+
+/** クライアント経由で渡る外部表紙 URL を SSRF・踏み台防止のため https + 許可ホストに限定する */
+export function isAllowedExternalCoverUrl(src: string): boolean {
+  let url: URL
+  try {
+    url = new URL(src)
+  } catch {
+    return false
+  }
+
+  if (url.protocol !== 'https:') {
+    return false
+  }
+
+  return ALLOWED_COVER_HOST_SUFFIXES.some(
+    (suffix) => url.hostname === suffix || url.hostname.endsWith(`.${suffix}`),
+  )
+}
+
 export function isAllowedThumbnailContentType(ct: string | null): boolean {
   if (!ct) {
     return false
@@ -30,6 +58,10 @@ export async function ingestExternalCover(
   isbn: string,
   externalUrl: string,
 ): Promise<string | null> {
+  if (!isAllowedExternalCoverUrl(externalUrl)) {
+    return null
+  }
+
   try {
     const res = await fetch(externalUrl, { redirect: 'follow' })
     if (!res.ok) {

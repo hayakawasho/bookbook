@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   existingThumbnailSrc,
   ingestExternalCover,
+  isAllowedExternalCoverUrl,
   isAllowedThumbnailContentType,
   isSelfThumbnailSrc,
   MAX_THUMBNAIL_BYTES,
@@ -41,7 +42,7 @@ describe('isSelfThumbnailSrc', () => {
   })
 
   it('外部 URL や undefined は false', () => {
-    expect(isSelfThumbnailSrc('https://example.com/cover.jpg')).toBe(false)
+    expect(isSelfThumbnailSrc('https://cover.openbd.jp/cover.jpg')).toBe(false)
     expect(isSelfThumbnailSrc(undefined)).toBe(false)
   })
 })
@@ -63,11 +64,43 @@ describe('isAllowedThumbnailContentType', () => {
   })
 })
 
+describe('isAllowedExternalCoverUrl', () => {
+  it('書誌 API の表紙ホストは true', () => {
+    expect(isAllowedExternalCoverUrl('https://cover.openbd.jp/cover.jpg')).toBe(true)
+    expect(isAllowedExternalCoverUrl('https://thumbnail.image.rakuten.co.jp/x.jpg')).toBe(true)
+    expect(isAllowedExternalCoverUrl('https://books.google.com/books/content?id=x')).toBe(true)
+    expect(isAllowedExternalCoverUrl('https://covers.openlibrary.org/b/isbn/x-L.jpg')).toBe(true)
+    expect(isAllowedExternalCoverUrl('https://ia800100.us.archive.org/x.jpg')).toBe(true)
+  })
+
+  it('許可外ホスト・http・不正 URL は false', () => {
+    expect(isAllowedExternalCoverUrl('https://example.com/cover.jpg')).toBe(false)
+    expect(isAllowedExternalCoverUrl('https://evil-openbd.jp/cover.jpg')).toBe(false)
+    expect(isAllowedExternalCoverUrl('https://openbd.jp.evil.com/cover.jpg')).toBe(false)
+    expect(isAllowedExternalCoverUrl('http://cover.openbd.jp/cover.jpg')).toBe(false)
+    expect(isAllowedExternalCoverUrl('not a url')).toBe(false)
+  })
+})
+
 describe('ingestExternalCover', () => {
+  it('許可外ホストは fetch せず null を返す', async () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await ingestExternalCover(env.THUMBNAILS, ISBN, 'https://example.com/cover.jpg')
+
+    expect(result).toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
   it('正常系: R2 に put され self URL が返り contentType が保存される', async () => {
     vi.stubGlobal('fetch', fetchOk(bytes(MIN_THUMBNAIL_BYTES), 'image/png'))
 
-    const result = await ingestExternalCover(env.THUMBNAILS, ISBN, 'https://example.com/cover.png')
+    const result = await ingestExternalCover(
+      env.THUMBNAILS,
+      ISBN,
+      'https://cover.openbd.jp/cover.png',
+    )
 
     expect(result).toBe(selfThumbnailSrc(ISBN))
     const stored = await env.THUMBNAILS.get(thumbnailKey(ISBN))
@@ -79,7 +112,11 @@ describe('ingestExternalCover', () => {
   it('fetch がネットワークエラーなら null', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')))
 
-    const result = await ingestExternalCover(env.THUMBNAILS, ISBN, 'https://example.com/cover.jpg')
+    const result = await ingestExternalCover(
+      env.THUMBNAILS,
+      ISBN,
+      'https://cover.openbd.jp/cover.jpg',
+    )
 
     expect(result).toBeNull()
     expect(await env.THUMBNAILS.head(thumbnailKey(ISBN))).toBeNull()
@@ -88,7 +125,11 @@ describe('ingestExternalCover', () => {
   it('fetch が非 2xx なら null', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })))
 
-    const result = await ingestExternalCover(env.THUMBNAILS, ISBN, 'https://example.com/cover.jpg')
+    const result = await ingestExternalCover(
+      env.THUMBNAILS,
+      ISBN,
+      'https://cover.openbd.jp/cover.jpg',
+    )
 
     expect(result).toBeNull()
   })
@@ -96,7 +137,11 @@ describe('ingestExternalCover', () => {
   it('Content-Type が許可外なら null', async () => {
     vi.stubGlobal('fetch', fetchOk(bytes(MIN_THUMBNAIL_BYTES), 'text/html'))
 
-    const result = await ingestExternalCover(env.THUMBNAILS, ISBN, 'https://example.com/cover.jpg')
+    const result = await ingestExternalCover(
+      env.THUMBNAILS,
+      ISBN,
+      'https://cover.openbd.jp/cover.jpg',
+    )
 
     expect(result).toBeNull()
   })
@@ -104,7 +149,11 @@ describe('ingestExternalCover', () => {
   it('サイズが下限未満なら null', async () => {
     vi.stubGlobal('fetch', fetchOk(bytes(MIN_THUMBNAIL_BYTES - 1)))
 
-    const result = await ingestExternalCover(env.THUMBNAILS, ISBN, 'https://example.com/cover.jpg')
+    const result = await ingestExternalCover(
+      env.THUMBNAILS,
+      ISBN,
+      'https://cover.openbd.jp/cover.jpg',
+    )
 
     expect(result).toBeNull()
   })
@@ -112,7 +161,11 @@ describe('ingestExternalCover', () => {
   it('サイズが上限超過なら null', async () => {
     vi.stubGlobal('fetch', fetchOk(bytes(MAX_THUMBNAIL_BYTES + 1)))
 
-    const result = await ingestExternalCover(env.THUMBNAILS, ISBN, 'https://example.com/cover.jpg')
+    const result = await ingestExternalCover(
+      env.THUMBNAILS,
+      ISBN,
+      'https://cover.openbd.jp/cover.jpg',
+    )
 
     expect(result).toBeNull()
   })

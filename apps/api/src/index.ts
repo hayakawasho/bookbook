@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { deleteCookie, getCookie } from 'hono/cookie'
-import { cors } from 'hono/cors'
 
 import {
   isAllowedSessionUser,
@@ -38,13 +37,10 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings; Variables: { sessionUser: SessionUser } }>()
 
-app.use('/api/*', cors({ credentials: true }))
+// web は同一 Worker の assets 配信（開発は Vite プロキシ）で常に同一オリジンのため CORS は設定しない
 
-/** /api/auth/* と CORS の OPTIONS は除き、セッション必須 */
+/** /api/auth/* を除きセッション必須 */
 app.use('/api/*', async (c, next) => {
-  if (c.req.method === 'OPTIONS') {
-    return next()
-  }
   const pathname = new URL(c.req.url).pathname
   if (pathname.startsWith('/api/auth')) {
     return next()

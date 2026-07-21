@@ -21,6 +21,7 @@ import { sendSlackNotification } from '../external/slack'
 import {
   existingThumbnailSrc,
   ingestExternalCover,
+  isAllowedExternalCoverUrl,
   isAllowedThumbnailContentType,
   isSelfThumbnailSrc,
   MAX_THUMBNAIL_BYTES,
@@ -107,7 +108,12 @@ booksRoutes.post('/', async (c) => {
     return c.json({ error: 'unknown location' }, 400)
   }
 
-  const externalCoverSrc = body.cover?.src || undefined
+  // クライアント指定の表紙 URL は自前サムネイル or 許可ホストのみ受け付ける（許可外は表紙なし扱い）
+  const rawCoverSrc = body.cover?.src || undefined
+  const externalCoverSrc =
+    rawCoverSrc && (isSelfThumbnailSrc(rawCoverSrc) || isAllowedExternalCoverUrl(rawCoverSrc))
+      ? rawCoverSrc
+      : undefined
   let coverSrc = externalCoverSrc
   if (!coverSrc || !isSelfThumbnailSrc(coverSrc)) {
     // 他 location で取り込み・撮影済みなら R2 に既にあるため、外部 fetch せず self URL から始める

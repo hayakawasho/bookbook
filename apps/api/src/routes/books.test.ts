@@ -307,7 +307,7 @@ describe('POST /api/books', () => {
         body: JSON.stringify({
           isbn: '1234567890123',
           title: 'テスト本',
-          cover: { src: 'https://example.com/cover.jpg' },
+          cover: { src: 'https://cover.openbd.jp/cover.jpg' },
           location: 'daikanyama',
         }),
       }),
@@ -319,7 +319,7 @@ describe('POST /api/books', () => {
       .first<{ title: string; total: number; cover_src: string }>()
     expect(row?.title).toBe('テスト本')
     expect(row?.total).toBe(1)
-    expect(row?.cover_src).toBe('https://example.com/cover.jpg')
+    expect(row?.cover_src).toBe('https://cover.openbd.jp/cover.jpg')
   })
 
   it('同じ isbn/location は重複登録されない', async () => {
@@ -376,7 +376,7 @@ describe('POST /api/books', () => {
         body: JSON.stringify({
           isbn: '9784000000001',
           title: '表紙あり本',
-          cover: { src: 'https://example.com/cover-ok.jpg' },
+          cover: { src: 'https://cover.openbd.jp/cover-ok.jpg' },
           location: 'daikanyama',
         }),
       }),
@@ -402,7 +402,7 @@ describe('POST /api/books', () => {
         body: JSON.stringify({
           isbn: '9784000000002',
           title: '表紙取得失敗本',
-          cover: { src: 'https://example.com/broken.jpg' },
+          cover: { src: 'https://cover.openbd.jp/broken.jpg' },
           location: 'daikanyama',
         }),
       }),
@@ -412,7 +412,7 @@ describe('POST /api/books', () => {
     const row = await env.DB.prepare('SELECT cover_src FROM books WHERE isbn = ?')
       .bind('9784000000002')
       .first<{ cover_src: string }>()
-    expect(row?.cover_src).toBe('https://example.com/broken.jpg')
+    expect(row?.cover_src).toBe('https://cover.openbd.jp/broken.jpg')
   })
 
   it('R2に既存の書影があれば外部fetchせず最初からselfURLで登録する', async () => {
@@ -431,7 +431,7 @@ describe('POST /api/books', () => {
         body: JSON.stringify({
           isbn,
           title: '他拠点取り込み済み本',
-          cover: { src: 'https://example.com/never-fetched.jpg' },
+          cover: { src: 'https://cover.openbd.jp/never-fetched.jpg' },
           location: 'okinawa',
         }),
       }),
@@ -674,7 +674,7 @@ describe('PATCH /api/books/:isbn/metadata', () => {
                 {
                   volumeInfo: {
                     title: '新タイトル',
-                    imageLinks: { thumbnail: 'https://example.com/refetched-cover.jpg' },
+                    imageLinks: { thumbnail: 'https://books.google.com/refetched-cover.jpg' },
                   },
                 },
               ],
@@ -694,7 +694,7 @@ describe('PATCH /api/books/:isbn/metadata', () => {
             { status: 200 },
           )
         }
-        if (url.startsWith('https://example.com/refetched-cover.jpg')) {
+        if (url.startsWith('https://books.google.com/refetched-cover.jpg')) {
           return new Response(bytes(600), {
             status: 200,
             headers: { 'Content-Type': 'image/jpeg' },
@@ -739,7 +739,7 @@ describe('PATCH /api/books/:isbn/metadata', () => {
                 {
                   volumeInfo: {
                     title: '新タイトル',
-                    imageLinks: { thumbnail: 'https://example.com/other-cover.jpg' },
+                    imageLinks: { thumbnail: 'https://books.google.com/other-cover.jpg' },
                   },
                 },
               ],
@@ -750,7 +750,7 @@ describe('PATCH /api/books/:isbn/metadata', () => {
         if (url.includes('api.openbd.jp')) {
           return new Response(JSON.stringify([null]), { status: 200 })
         }
-        if (url.startsWith('https://example.com/other-cover.jpg')) {
+        if (url.startsWith('https://books.google.com/other-cover.jpg')) {
           return new Response(bytes(600, 1), {
             status: 200,
             headers: { 'Content-Type': 'image/jpeg' },
