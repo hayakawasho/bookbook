@@ -12,10 +12,19 @@ export function normalizeIsbnBarcode(raw: string): string | null {
   }
 
   if (/^\d{9}[\dX]$/i.test(cleaned)) {
-    return isbn10ToIsbn13(cleaned.toUpperCase())
+    const isbn10 = cleaned.toUpperCase()
+    return hasValidIsbn10CheckDigit(isbn10) ? isbn10ToIsbn13(isbn10) : null
   }
 
   return null
+}
+
+function hasValidIsbn10CheckDigit(isbn: string): boolean {
+  let sum = 0
+  for (let i = 0; i < 10; i++) {
+    sum += (isbn[i] === 'X' ? 10 : Number(isbn[i])) * (10 - i)
+  }
+  return sum % 11 === 0
 }
 
 function hasValidIsbn13CheckDigit(isbn: string): boolean {
