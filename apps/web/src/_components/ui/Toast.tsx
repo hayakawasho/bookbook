@@ -11,9 +11,20 @@ export type ToastAction = {
 
 type ToastProps = {
   message: string
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'info'
   action?: ToastAction
   onDismiss: () => void
+}
+
+function getToastToneClassName(type: ToastProps['type']): string {
+  switch (type) {
+    case 'error':
+      return 'bg-error text-[#1C1F22]'
+    case 'success':
+      return 'bg-accent text-[#1C1F22]'
+    case 'info':
+      return 'bg-info text-[#1C1F22]'
+  }
 }
 
 export function Toast({ message, type, action, onDismiss }: ToastProps) {
@@ -24,11 +35,11 @@ export function Toast({ message, type, action, onDismiss }: ToastProps) {
     }
   }, [onDismiss, action])
 
-  const isError = type === 'error'
+  const toneClassName = getToastToneClassName(type)
 
   return (
     <div
-      className={`fixed top-5 left-1/2 z-60 -translate-x-1/2 w-11/12 justify-between flex items-center gap-4 px-4 py-3 text-sm font-semibold text-[#1C1F22] ${isError ? 'bg-error' : 'bg-accent'}`}
+      className={`fixed top-5 left-1/2 z-60 -translate-x-1/2 w-11/12 justify-between flex items-center gap-4 px-4 py-3 text-sm font-semibold ${toneClassName}`}
       role="status"
       aria-live="polite"
     >

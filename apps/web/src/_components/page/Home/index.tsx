@@ -15,6 +15,8 @@ import { useCoverCapture } from './hooks/useCoverCapture'
 
 import type { ToastState } from './types'
 
+const keepScanningToastVisible = () => {}
+
 export function HomeScreen() {
   const [toast, setToast] = useState<ToastState>(null)
 
@@ -66,7 +68,6 @@ export function HomeScreen() {
           <HomeBarcodePanel
             cameraElementId={HOME_BARCODE_CAMERA_ELEMENT_ID}
             cameraOpen={capture.cameraOpen}
-            isDetecting={capture.isDetecting}
             isbnInput={lookup.isbnInput}
             notFound={lookup.notFound}
             onChangeIsbnInput={lookup.handleChangeIsbnInput}
@@ -108,13 +109,18 @@ export function HomeScreen() {
         />
       )}
 
-      {toast && (
+      {toast ? (
         <Toast
           message={toast.message}
           type={toast.type}
           action={toast.action}
           onDismiss={() => setToast(null)}
         />
+      ) : (
+        capture.isDetecting &&
+        lookup.sheetMode === null && (
+          <Toast message="Scanning…" type="info" onDismiss={keepScanningToastVisible} />
+        )
       )}
     </div>
   )
