@@ -60,4 +60,46 @@ describe('createContinuousDetectionGate', () => {
     expect(gate.shouldHandle('978A', 300)).toBe(false)
     expect(gate.shouldHandle('978A', 400)).toBe(true)
   })
+
+  it('扱い済みの値が映り続けている間は、誤読フレームが挟まっても再発火しない', () => {
+    const gate = createContinuousDetectionGate(GAP, 3)
+    gate.shouldHandle('978A', 0)
+    gate.shouldHandle('978A', 125)
+
+    expect(gate.shouldHandle('978A', 250)).toBe(true)
+
+    gate.shouldHandle('978B', 375)
+
+    expect(gate.shouldHandle('978A', 500)).toBe(false)
+    expect(gate.shouldHandle('978A', 625)).toBe(false)
+    expect(gate.shouldHandle('978A', 750)).toBe(false)
+  })
+
+  it('扱い済みの値でも検知断が続けば新規スキャンとして再アームされる', () => {
+    const gate = createContinuousDetectionGate(GAP, 3)
+    gate.shouldHandle('978A', 0)
+    gate.shouldHandle('978A', 125)
+    gate.shouldHandle('978A', 250)
+
+    const t = 250 + GAP + 1
+
+    expect(gate.shouldHandle('978A', t)).toBe(false)
+    expect(gate.shouldHandle('978A', t + 125)).toBe(false)
+    expect(gate.shouldHandle('978A', t + 250)).toBe(true)
+  })
+
+  it('別の値を扱った後も、検知断が続いていない元の値は再発火しない', () => {
+    const gate = createContinuousDetectionGate(GAP, 3)
+    gate.shouldHandle('978A', 0)
+    gate.shouldHandle('978A', 125)
+    expect(gate.shouldHandle('978A', 250)).toBe(true)
+
+    gate.shouldHandle('978B', 375)
+    gate.shouldHandle('978B', 500)
+    expect(gate.shouldHandle('978B', 625)).toBe(true)
+
+    gate.shouldHandle('978A', 750)
+    gate.shouldHandle('978A', 875)
+    expect(gate.shouldHandle('978A', 1000)).toBe(false)
+  })
 })

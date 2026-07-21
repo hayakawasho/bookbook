@@ -6,28 +6,33 @@ export function createContinuousDetectionGate(rearmGapMs: number, requiredMatche
   let lastRaw: string | null = null
   let lastSeenAt = 0
   let matchCount = 0
-  let handled = false
+  // 扱い済みの値は別値が挟まっても保持し、値ごとの検知断が rearmGapMs 続いたときだけ再アームする
+  const handledSeenAtByRaw = new Map<string, number>()
 
   return {
     /** 呼ぶたびに目撃時刻を更新する。新規スキャンとして扱うべきときだけ true */
     shouldHandle(raw: string, now: number): boolean {
       const isContinuousSighting = raw === lastRaw && now - lastSeenAt < rearmGapMs
-
-      if (isContinuousSighting) {
-        matchCount += 1
-      } else {
-        matchCount = 1
-        handled = false
-      }
-
+      matchCount = isContinuousSighting ? matchCount + 1 : 1
       lastRaw = raw
       lastSeenAt = now
 
-      if (handled || matchCount < requiredMatches) {
+      for (const [handledRaw, handledSeenAt] of handledSeenAtByRaw) {
+        if (now - handledSeenAt >= rearmGapMs) {
+          handledSeenAtByRaw.delete(handledRaw)
+        }
+      }
+
+      if (handledSeenAtByRaw.has(raw)) {
+        handledSeenAtByRaw.set(raw, now)
         return false
       }
 
-      handled = true
+      if (matchCount < requiredMatches) {
+        return false
+      }
+
+      handledSeenAtByRaw.set(raw, now)
       return true
     },
 
@@ -36,7 +41,7 @@ export function createContinuousDetectionGate(rearmGapMs: number, requiredMatche
       lastRaw = null
       lastSeenAt = 0
       matchCount = 0
-      handled = false
+      handledSeenAtByRaw.clear()
     },
   }
 }
