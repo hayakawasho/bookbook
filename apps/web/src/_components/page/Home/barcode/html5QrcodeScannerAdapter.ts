@@ -1,8 +1,5 @@
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
-
+import type { Html5Qrcode } from 'html5-qrcode'
 import type { BarcodeScannerAdapter, ScanOptions } from './barcodeScannerAdapter'
-
-const EAN_13_ONLY: Html5QrcodeSupportedFormats[] = [Html5QrcodeSupportedFormats.EAN_13]
 
 /** mobile の Scanner と同様、978 から始まる ISBN（EAN-13）のみ検出扱いにする */
 const ISBN_CODE_PREFIX = '978'
@@ -11,8 +8,9 @@ function isIsbnBarcode(raw: string): boolean {
   return raw.trim().startsWith(ISBN_CODE_PREFIX)
 }
 
-function barcodeDecoderConfig(verbose: boolean) {
-  return { verbose, formatsToSupport: EAN_13_ONLY }
+/** 初期バンドルから読取エンジンを外すため、カメラ起動時に動的 import する */
+async function loadHtml5Qrcode() {
+  return import('html5-qrcode')
 }
 
 async function stopAndClear(qr: Html5Qrcode): Promise<void> {
@@ -74,7 +72,17 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
 
     await this.disposeCamera()
 
-    const qr = new Html5Qrcode(elementId, barcodeDecoderConfig(false))
+    let qr: Html5Qrcode
+    try {
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await loadHtml5Qrcode()
+      qr = new Html5Qrcode(elementId, {
+        verbose: false,
+        formatsToSupport: [Html5QrcodeSupportedFormats.EAN_13],
+      })
+    } catch (e) {
+      options.onError?.(e instanceof Error ? e : new Error(String(e)))
+      return
+    }
     this.cameraQr = qr
 
     try {
