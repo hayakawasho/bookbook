@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import { Book } from '../../../../_models/book'
 import { BookCover } from '../../../feature/book/BookCover'
 import { BookItem, BookStockSummaryLines } from '../../../feature/book/BookItem'
-import { IconPlus } from '../../../ui/icon'
+import { IconPhotoCamera, IconPlus } from '../../../ui/icon'
 
 import type { ExternalBookInfo } from '../../../../_usecases/book/ports'
 
@@ -78,14 +78,15 @@ export function HomeExternalBookSheet({
       <div className="flex gap-[29px] items-start px-[22px] pt-0 pb-2">
         <BookItem
           book={displayBook}
-          action={
-            showCoverCapture ? (
+          cover={
+            showCoverCapture && !coverPreviewSrc ? (
               <button
                 type="button"
-                className="min-h-[40px] px-2.5 py-2 bg-surface text-text text-xs font-semibold tracking-tight cursor-pointer inline-flex items-center gap-1.5"
+                className="w-[103px] h-[145px] border border-border bg-surface text-text cursor-pointer inline-flex flex-col items-center justify-center gap-2"
                 onClick={() => fileInputRef.current?.click()}
               >
-                表紙を撮影
+                <IconPhotoCamera size={28} />
+                <span className="text-xs font-semibold leading-[17px]">表紙を撮影</span>
               </button>
             ) : undefined
           }
@@ -97,8 +98,7 @@ export function HomeExternalBookSheet({
           type="file"
           accept="image/*"
           capture="environment"
-          aria-label="表紙を撮影"
-          className="sr-only"
+          hidden
           onChange={(e) => {
             const file = e.target.files?.[0]
 

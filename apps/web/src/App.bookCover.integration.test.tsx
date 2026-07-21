@@ -45,13 +45,25 @@ describe('Home 表紙を撮影', () => {
 
     await searchByIsbn(user, NO_COVER_ISBN)
 
-    const fileInput = await screen.findByLabelText('表紙を撮影')
+    const captureButton = await screen.findByRole('button', { name: '表紙を撮影' })
+    expect(screen.getAllByRole('button', { name: '表紙を撮影' })).toHaveLength(1)
+    expect(captureButton.querySelector('[data-icon="photo-camera"]')).toBeInTheDocument()
+
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')
+    expect(fileInput).not.toBeNull()
+    expect(fileInput).not.toHaveAccessibleName()
+    const inputClickSpy = vi.spyOn(fileInput as HTMLInputElement, 'click')
+
+    await user.click(captureButton)
+    expect(inputClickSpy).toHaveBeenCalledOnce()
+
     const file = new File(['cover-bytes'], 'cover.jpg', { type: 'image/jpeg' })
-    await user.upload(fileInput, file)
+    await user.upload(fileInput as HTMLInputElement, file)
 
     await waitFor(() => {
       expect(screen.getByAltText(NO_COVER_TITLE)).toHaveAttribute('src', 'blob:mock-preview')
     })
+    expect(screen.queryByRole('button', { name: '表紙を撮影' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '新規追加' }))
 
@@ -77,6 +89,6 @@ describe('Home 表紙を撮影', () => {
     await searchByIsbn(user, HAS_COVER_ISBN)
 
     await screen.findByRole('button', { name: '新規追加' })
-    expect(screen.queryByLabelText('表紙を撮影')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '表紙を撮影' })).not.toBeInTheDocument()
   })
 })

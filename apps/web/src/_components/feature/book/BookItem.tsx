@@ -8,6 +8,7 @@ export type BookView = Pick<Book, 'title' | 'author' | 'publisher' | 'cover'>
 
 type BookItemProps = {
   book: BookView
+  cover?: ReactNode
   prependMeta?: ReactNode
   action?: ReactNode
 }
@@ -25,11 +26,11 @@ export function BookStockSummaryLines({ book }: { book: Book }) {
   )
 }
 
-export function BookItem({ book, prependMeta, action }: BookItemProps) {
+export function BookItem({ book, cover, prependMeta, action }: BookItemProps) {
   return (
     <div className="flex gap-[29px] px-[22px] py-8 items-start">
       <div className="shrink-0 w-[103px]">
-        <BookCover src={book.cover.src} alt={book.title} />
+        {cover ?? <BookCover src={book.cover.src} alt={book.title} />}
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         {prependMeta}
