@@ -82,7 +82,7 @@ export function HomeExternalBookSheet({
             showCoverCapture && !coverPreviewSrc ? (
               <button
                 type="button"
-                className="w-[103px] h-[145px] border border-border bg-white text-[#757575] cursor-pointer inline-flex flex-col items-center justify-center gap-2"
+                className="w-[103px] h-[145px] bg-white text-[#757575] cursor-pointer inline-flex flex-col items-center justify-center gap-2"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <IconPhotoCamera size={28} />
