@@ -24,7 +24,7 @@ export function createBarcodeScanSession({
   let failureReported = false
 
   return {
-    observe(raw: string, now: number): BarcodeScanSessionResult {
+    observe(raw: string, now: number, blocked = false): BarcodeScanSessionResult {
       if (lastObservedAt !== null && now - lastObservedAt >= rearmGapMs) {
         detectionGate.reset()
         attemptStartedAt = null
@@ -32,7 +32,6 @@ export function createBarcodeScanSession({
       }
 
       lastObservedAt = now
-      attemptStartedAt ??= now
 
       const isbn = normalizeIsbnBarcode(raw)
       if (isbn && detectionGate.shouldHandle(isbn, now)) {
@@ -40,6 +39,15 @@ export function createBarcodeScanSession({
         failureReported = false
         return { kind: 'confirmed', isbn }
       }
+
+      // ブロック中はユーザーの読み取り試行ではないため、失敗判定の計時を進めない
+      if (blocked) {
+        attemptStartedAt = null
+        failureReported = false
+        return { kind: 'detecting' }
+      }
+
+      attemptStartedAt ??= now
 
       if (!failureReported && now - attemptStartedAt >= failureAfterMs) {
         failureReported = true

@@ -41,7 +41,7 @@ export function useBarcodeCapture({
         }
         feedbackTimerRef.current = window.setTimeout(() => setIsDetecting(false), 250)
 
-        const result = scanSessionRef.current.observe(raw, Date.now())
+        const result = scanSessionRef.current.observe(raw, Date.now(), scanBlockedRef.current)
 
         if (scanBlockedRef.current) {
           return

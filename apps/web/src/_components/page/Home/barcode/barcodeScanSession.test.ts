@@ -61,4 +61,22 @@ describe('createBarcodeScanSession', () => {
     }
     expect(session.observe('123', 7000)).toEqual({ kind: 'failed' })
   })
+
+  it('ブロック中は失敗判定の計時を進めず、解除後に新しい試行として判定する', () => {
+    const session = createBarcodeScanSession({
+      rearmGapMs: 700,
+      requiredMatches: 3,
+      failureAfterMs: 3000,
+    })
+
+    for (let now = 0; now <= 3500; now += 500) {
+      expect(session.observe('123', now, true)).toEqual({ kind: 'detecting' })
+    }
+
+    expect(session.observe('123', 4000)).toEqual({ kind: 'detecting' })
+    for (let now = 4500; now < 7000; now += 500) {
+      expect(session.observe('123', now)).toEqual({ kind: 'detecting' })
+    }
+    expect(session.observe('123', 7000)).toEqual({ kind: 'failed' })
+  })
 })
