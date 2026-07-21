@@ -49,16 +49,32 @@ describe('App', () => {
       expect(screen.getByText('借りている本')).toBeInTheDocument()
     })
 
-    it('/library?q= の直リンクで検索クエリが適用される', async () => {
+    it('本棚の検索クエリを自由入力できる', async () => {
+      const user = userEvent.setup()
+      render(
+        <MemoryRouter initialEntries={['/library']}>
+          <App {...createTestDeps()} />
+        </MemoryRouter>,
+      )
+
+      const input = await screen.findByLabelText('本棚を検索')
+      await user.type(input, 'リーダブル')
+
+      expect(input).toHaveValue('リーダブル')
+      expect(await screen.findByText('リーダブルコード')).toBeInTheDocument()
+      expect(screen.queryByText('テスト駆動開発')).not.toBeInTheDocument()
+    })
+
+    it('本棚の検索クエリを URL から復元しない', async () => {
       render(
         <MemoryRouter initialEntries={['/library?q=リーダブル']}>
           <App {...createTestDeps()} />
         </MemoryRouter>,
       )
 
-      expect(await screen.findByLabelText('本棚を検索')).toHaveValue('リーダブル')
+      expect(await screen.findByLabelText('本棚を検索')).toHaveValue('')
       expect(await screen.findByText('リーダブルコード')).toBeInTheDocument()
-      expect(screen.queryByText('テスト駆動開発')).not.toBeInTheDocument()
+      expect(screen.getByText('テスト駆動開発')).toBeInTheDocument()
     })
 
     it('/history?tab=past の直リンクで「これまで借りた本」が表示される', async () => {
