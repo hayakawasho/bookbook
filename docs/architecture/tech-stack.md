@@ -25,7 +25,7 @@
 | React 統合         | `@vitejs/plugin-react`   | Fast Refresh 等 |
 | スタイリング       | Tailwind CSS 4           | `@tailwindcss/vite` で Vite 統合 |
 | データ取得         | SWR 2                    | `main.tsx` で `SWRConfig`（再検証ポリシーをアプリ全体で統一） |
-| QR / バーコード    | html5-qrcode             | 書籍 ISBN スキャン用途 |
+| QR / バーコード    | `@ericblade/quagga2`      | 書籍 ISBN スキャン用途 |
 | PWA                | Service Worker           | `registerServiceWorker.ts` と `public/sw.js` |
 | 単体・統合テスト   | Vitest 3 + jsdom、React Testing Library、`@testing-library/jest-dom` | `apps/web/vitest.config.ts`、`src/test/setup.ts` |
 | UI カタログ（任意） | Storybook 10（Vite builder） | `apps/web` に配置、`npm run storybook -w @bookbook/web` |

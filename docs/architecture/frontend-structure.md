@@ -103,7 +103,7 @@ application が必要とする repository / gateway の抽象？
 browser API / storage / Service Worker？
   → _foundation
 
-外部ライブラリの薄い adapter？（例: html5-qrcode）
+外部ライブラリの薄い adapter？（例: Quagga2）
   → _libs
 ```
 
@@ -163,7 +163,7 @@ page/<Screen>/            # PascalCase（Home / Library / CheckoutHistory / Sett
 画面固有のインフラ（例: `Home/barcode/`）:
 
 - その画面だけが使う adapter・外部ライブラリのラッパは `page/<Screen>/` 直下にコロケーションする（`_internal` は UI 向け）
-- `html5-qrcode` など重い依存は adapter ファイルに閉じ、`_components/app` や `_foundation` へ載せない
+- Quagga2 など重い依存は adapter ファイルに閉じ、`_components/app` や `_foundation` へ載せない
 
 ### `feature`
 
@@ -256,7 +256,7 @@ UI やページ文脈を持たない、画面表現を成立させる基盤。
 
 代表例:
 
-- `html5-qrcode` の adapter（現状は `page/Home/barcode/` にコロケーション。他画面で使うようになったら `_libs` へ昇格する）
+- Quagga2 の adapter（現状は `page/Home/barcode/` にコロケーション。他画面で使うようになったら `_libs` へ昇格する）
 
 ## `packages/utils`
 
