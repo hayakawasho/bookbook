@@ -1,6 +1,7 @@
 type HomeBarcodePanelProps = {
   cameraElementId: string
   cameraOpen: boolean
+  showScanGuide: boolean
   isbnInput: string
   notFound: boolean
   onChangeIsbnInput: (value: string) => void
@@ -10,6 +11,7 @@ type HomeBarcodePanelProps = {
 export function HomeBarcodePanel({
   cameraElementId,
   cameraOpen,
+  showScanGuide,
   isbnInput,
   notFound,
   onChangeIsbnInput,
@@ -46,12 +48,15 @@ export function HomeBarcodePanel({
       )}
       <div className="absolute inset-0 pointer-events-none">
         {cameraOpen && (
-          <div
-            id={cameraElementId}
-            className="flex-1 basis-0 min-h-[200px] w-full bg-black/60 overflow-hidden h-[stretch]"
-            role="presentation"
-            aria-live="polite"
-          />
+          <>
+            <div
+              id={cameraElementId}
+              className="flex-1 basis-0 min-h-[200px] w-full bg-black/60 overflow-hidden h-[stretch]"
+              role="presentation"
+              aria-live="polite"
+            />
+            {showScanGuide && <div className="barcode-scan-guide" aria-hidden="true" />}
+          </>
         )}
       </div>
     </div>

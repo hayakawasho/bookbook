@@ -1,7 +1,7 @@
 import { type RefObject, useLayoutEffect, useRef, useState } from 'react'
 
 import { createContinuousDetectionGate } from '../barcode/continuousDetectionGate'
-import { createBarcodeScanner } from '../barcode/createBarcodeScanner'
+import { createBarcodeScanner, resolveBarcodeScannerKind } from '../barcode/createBarcodeScanner'
 import { HOME_BARCODE_CAMERA_ELEMENT_ID } from '../constants'
 
 type UseBarcodeCaptureOptions = {
@@ -16,7 +16,10 @@ export function useBarcodeCapture({
   showToast,
 }: UseBarcodeCaptureOptions) {
   const barcodeScannerRef = useRef(createBarcodeScanner())
-  // fps=8（約125ms間隔）で映りっぱなしなら検知が途切れない前提。本を持ち上げて再度かざす動作は
+  const [scannerKind] = useState(() =>
+    resolveBarcodeScannerKind(typeof window === 'undefined' ? '' : window.location.search),
+  )
+  // 映りっぱなしなら検知が途切れない前提。本を持ち上げて再度かざす動作は
   // 数百msの検知断で判別できるため、短めにして「すぐ再スキャン」を成立させる
   const detectionGateRef = useRef(createContinuousDetectionGate(700))
 
@@ -53,5 +56,6 @@ export function useBarcodeCapture({
 
   return {
     cameraOpen,
+    showScanGuide: scannerKind === 'quagga2',
   }
 }

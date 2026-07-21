@@ -6,13 +6,19 @@
   object-fit: cover;
 }
 
-#qr-shaded-region {
+#qr-shaded-region,
+.barcode-scan-guide {
   border: none !important;
   width: min(calc(287px / 375px * 100%), 287px);
   aspect-ratio: 287 / 101;
   position: absolute;
   inset: 0;
   margin: auto;
+}
+
+.barcode-scan-guide {
+  z-index: 1;
+  border: 10px solid var(--color-accent) !important;
 }
 
 #qr-shaded-region:before {

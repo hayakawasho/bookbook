@@ -64,6 +64,7 @@ export function HomeScreen() {
           <HomeBarcodePanel
             cameraElementId={HOME_BARCODE_CAMERA_ELEMENT_ID}
             cameraOpen={capture.cameraOpen}
+            showScanGuide={capture.showScanGuide}
             isbnInput={lookup.isbnInput}
             notFound={lookup.notFound}
             onChangeIsbnInput={lookup.handleChangeIsbnInput}
