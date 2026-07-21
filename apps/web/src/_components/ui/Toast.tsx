@@ -19,11 +19,11 @@ type ToastProps = {
 function getToastToneClassName(type: ToastProps['type']): string {
   switch (type) {
     case 'error':
-      return 'bg-error text-[#1C1F22]'
+      return 'font-semibold bg-error text-[#1C1F22]'
     case 'success':
-      return 'bg-accent text-[#1C1F22]'
+      return 'font-semibold bg-accent text-[#1C1F22]'
     case 'info':
-      return 'bg-info text-[#1C1F22]'
+      return 'bg-info text-white'
   }
 }
 
@@ -39,7 +39,7 @@ export function Toast({ message, type, action, onDismiss }: ToastProps) {
 
   return (
     <div
-      className={`fixed top-5 left-1/2 z-60 -translate-x-1/2 w-11/12 justify-between flex items-center gap-4 px-4 py-3 text-sm font-semibold ${toneClassName}`}
+      className={`fixed top-5 left-1/2 z-60 -translate-x-1/2 w-11/12 justify-between flex items-center gap-4 px-4 py-3 text-sm ${toneClassName}`}
       role="status"
       aria-live="polite"
     >
