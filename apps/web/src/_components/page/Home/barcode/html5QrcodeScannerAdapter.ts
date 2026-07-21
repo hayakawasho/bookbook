@@ -13,6 +13,17 @@ async function loadHtml5Qrcode() {
   return import('html5-qrcode')
 }
 
+export function createHtml5QrcodeScanConfig() {
+  return {
+    fps: 10,
+    qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+      const width = Math.floor(viewfinderWidth * 0.9)
+      const height = Math.min(Math.floor(width / 2), Math.floor(viewfinderHeight * 0.9))
+      return { width, height }
+    },
+  }
+}
+
 async function stopAndClear(qr: Html5Qrcode): Promise<void> {
   try {
     if (qr.isScanning) {
@@ -88,13 +99,7 @@ export class Html5QrcodeScannerAdapter implements BarcodeScannerAdapter {
     try {
       await qr.start(
         { facingMode: 'environment' },
-        {
-          fps: 8,
-          qrbox: () => ({
-            width: 287,
-            height: 101,
-          }),
-        },
+        createHtml5QrcodeScanConfig(),
         (decodedText) => {
           if (!isIsbnBarcode(decodedText)) {
             return
