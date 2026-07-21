@@ -18,10 +18,7 @@ export function useBookLookup({ showToast }: UseBookLookupOptions) {
 
   // シート表示中もカメラの検知コールバックは走り続けるため、最新値を ref で参照させる
   const scanBlockedRef = useRef(false)
-
-  useEffect(() => {
-    scanBlockedRef.current = sheetMode !== null
-  }, [sheetMode])
+  const lookupInFlightRef = useRef(false)
 
   const { data: bookResult, error: bookError } = useBookItem(lookupIsbn)
 
@@ -30,6 +27,8 @@ export function useBookLookup({ showToast }: UseBookLookupOptions) {
       return
     }
 
+    scanBlockedRef.current = false
+    lookupInFlightRef.current = false
     setLookupIsbn(null)
     showToast('本の情報を確認できませんでした。時間を置いて、もう一度お試しください', 'error')
   }, [bookError, lookupIsbn, showToast])
@@ -42,7 +41,10 @@ export function useBookLookup({ showToast }: UseBookLookupOptions) {
     const next = sheetModeAfterLookup(bookResult)
 
     if (next === 'not-found') {
+      scanBlockedRef.current = false
+      lookupInFlightRef.current = false
       setNotFound(true)
+      setLookupIsbn(null)
       showToast('本の情報が見つかりませんでした', 'error')
       return
     }
@@ -52,6 +54,10 @@ export function useBookLookup({ showToast }: UseBookLookupOptions) {
 
   const lookupByBarcodeRaw = useCallback(
     (raw: string) => {
+      if (scanBlockedRef.current || lookupInFlightRef.current) {
+        return
+      }
+
       const isbn = normalizeIsbnBarcode(raw.trim())
       setNotFound(false)
       setSheetMode(null)
@@ -63,6 +69,8 @@ export function useBookLookup({ showToast }: UseBookLookupOptions) {
         return
       }
 
+      scanBlockedRef.current = true
+      lookupInFlightRef.current = true
       setIsbnInput(isbn)
       setLookupIsbn(isbn)
     },
@@ -79,11 +87,15 @@ export function useBookLookup({ showToast }: UseBookLookupOptions) {
   }
 
   const handleSheetClose = useCallback(() => {
+    scanBlockedRef.current = false
+    lookupInFlightRef.current = false
     setSheetMode(null)
     setLookupIsbn(null)
   }, [])
 
   const clearScanSession = useCallback(() => {
+    scanBlockedRef.current = false
+    lookupInFlightRef.current = false
     setSheetMode(null)
     setLookupIsbn(null)
     setIsbnInput('')

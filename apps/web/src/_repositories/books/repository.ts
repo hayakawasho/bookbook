@@ -66,12 +66,12 @@ const EXTERNAL_BOOKS: Record<string, ExternalBookInfo> = {
     publisher: '翔泳社',
     cover: {},
   },
-  '9784798163214': {
-    isbn: '9784798163214',
+  '9784798163215': {
+    isbn: '9784798163215',
     title: 'エンジニアリング組織論への招待',
     author: '広木大地',
     publisher: '技術評論社',
-    cover: { src: 'https://example.com/covers/9784798163214.jpg' },
+    cover: { src: 'https://example.com/covers/9784798163215.jpg' },
   },
 }
 

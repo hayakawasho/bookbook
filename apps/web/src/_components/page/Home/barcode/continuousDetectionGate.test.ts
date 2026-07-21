@@ -50,4 +50,14 @@ describe('createContinuousDetectionGate', () => {
 
     expect(gate.shouldHandle('978A', 125)).toBe(true)
   })
+
+  it('必要回数連続して同じ値を検出するまで扱わない', () => {
+    const gate = createContinuousDetectionGate(GAP, 3)
+
+    expect(gate.shouldHandle('978A', 0)).toBe(false)
+    expect(gate.shouldHandle('978B', 100)).toBe(false)
+    expect(gate.shouldHandle('978A', 200)).toBe(false)
+    expect(gate.shouldHandle('978A', 300)).toBe(false)
+    expect(gate.shouldHandle('978A', 400)).toBe(true)
+  })
 })

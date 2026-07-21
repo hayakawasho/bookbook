@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { App } from './_components/app/App'
 import { createTestDeps } from './test/testDeps'
@@ -153,6 +153,30 @@ describe('App', () => {
       expect(await screen.findByRole('status')).toHaveTextContent(
         '本の情報を確認できませんでした。時間を置いて、もう一度お試しください',
       )
+    })
+
+    it('書籍検索中は別のISBNの検索を重ねて開始しない', async () => {
+      const deps = createTestDeps()
+      deps.repositories.bookRepo.findByIsbn = vi.fn(() => new Promise(() => {}))
+      const user = userEvent.setup()
+
+      render(
+        <MemoryRouter>
+          <App {...deps} />
+        </MemoryRouter>,
+      )
+
+      const input = await screen.findByPlaceholderText(/ISBNを入力/)
+      await user.type(input, '9791234567896')
+      const button = screen.getByRole('button', { name: '検索' })
+      await user.click(button)
+      await user.clear(input)
+      await user.type(input, '9790000000001')
+      await user.click(button)
+
+      expect(vi.mocked(deps.repositories.bookRepo.findByIsbn).mock.calls).toEqual([
+        ['9791234567896', 'daikanyama'],
+      ])
     })
   })
 })

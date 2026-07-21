@@ -5,7 +5,7 @@ export type ScanOptions = {
   onError?: (error: Error) => void
 }
 
-/** バーコード読み取り（実装ライブラリは `html5QrcodeScannerAdapter` のみで import する） */
+/** バーコード読み取り */
 export interface BarcodeScannerAdapter {
   isSupported(): boolean
   start(options: ScanOptions): void

@@ -13,7 +13,7 @@ vi.mock('./_foundation/coverImageResize', () => ({
 // coverImageResize は canvas 前提のため jsdom では通さない（上でパススルーに差し替え済み）
 const NO_COVER_ISBN = '9784295012641'
 const NO_COVER_TITLE = 'チームトポロジー'
-const HAS_COVER_ISBN = '9784798163214'
+const HAS_COVER_ISBN = '9784798163215'
 
 async function searchByIsbn(user: ReturnType<typeof userEvent.setup>, isbn: string) {
   const input = screen.getByPlaceholderText(/ISBNを入力/)

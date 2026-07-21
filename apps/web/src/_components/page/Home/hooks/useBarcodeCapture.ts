@@ -18,7 +18,7 @@ export function useBarcodeCapture({
   const barcodeScannerRef = useRef(createBarcodeScanner())
   // 映りっぱなしなら検知が途切れない前提。本を持ち上げて再度かざす動作は
   // 数百msの検知断で判別できるため、短めにして「すぐ再スキャン」を成立させる
-  const detectionGateRef = useRef(createContinuousDetectionGate(700))
+  const detectionGateRef = useRef(createContinuousDetectionGate(700, 3))
 
   // カメラ不可のときだけ ISBN 手入力にフォールバックする（経路は常に1つ）
   const [cameraOpen, setCameraOpen] = useState(() => barcodeScannerRef.current.isSupported())
