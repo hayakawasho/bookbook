@@ -11,6 +11,7 @@ storybook-static
 apps/mobile
 plan
 plans
+.worktrees
 
 # Cloudflare Worker ローカル開発用シークレット（コミット禁止）
 .dev.vars
