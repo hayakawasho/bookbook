@@ -9,7 +9,6 @@ import {
   type SessionUser,
   verifySession,
 } from './auth'
-import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { booksRoutes } from './routes/books'
 import { historyRoutes } from './routes/history'
@@ -73,7 +72,6 @@ app.use('/api/*', async (c, next) => {
 })
 
 app.route('/api/auth', authRoutes)
-app.route('/api/admin', adminRoutes)
 app.route('/api/books', booksRoutes)
 app.route('/api/history', historyRoutes)
 app.route('/api/thumbnails', thumbnailsRoutes)

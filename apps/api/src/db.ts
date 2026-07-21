@@ -456,37 +456,3 @@ export async function undoReturnBook(db: D1Database, historyId: string): Promise
 
   return 'ok'
 }
-
-/** バックフィル対象（cover_src 未設定 or 外部URLのまま）の isbn をカーソル以降から limit 件取得する。1件に複数 location の cover_src があっても isbn 単位で1件にまとめる */
-export async function findIsbnsNeedingThumbnailBackfill(
-  db: D1Database,
-  limit: number,
-  after?: string,
-): Promise<{ isbn: string; coverSrc: string | null }[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT isbn, MAX(cover_src) AS cover_src FROM books
-       WHERE deleted_at IS NULL AND (cover_src IS NULL OR cover_src LIKE 'http%')
-         AND (?2 IS NULL OR isbn > ?2)
-       GROUP BY isbn
-       ORDER BY isbn
-       LIMIT ?1`,
-    )
-    .bind(limit, after ?? null)
-    .all<{ isbn: string; cover_src: string | null }>()
-  return results.map((row) => ({ isbn: row.isbn, coverSrc: row.cover_src }))
-}
-
-/** バックフィル対象の残件数（isbn 単位） */
-export async function countIsbnsNeedingThumbnailBackfill(db: D1Database): Promise<number> {
-  const row = await db
-    .prepare(
-      `SELECT COUNT(*) AS count FROM (
-         SELECT isbn FROM books
-         WHERE deleted_at IS NULL AND (cover_src IS NULL OR cover_src LIKE 'http%')
-         GROUP BY isbn
-       )`,
-    )
-    .first<{ count: number }>()
-  return row?.count ?? 0
-}
