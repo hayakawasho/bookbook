@@ -19,7 +19,7 @@ export function useBarcodeCapture({
 }: UseBarcodeCaptureOptions) {
   const barcodeScannerRef = useRef(createBarcodeScanner())
   const scanSessionRef = useRef(
-    createBarcodeScanSession({ rearmGapMs: 700, requiredMatches: 3, failureAfterMs: 3000 }),
+    createBarcodeScanSession({ rearmGapMs: 700, requiredMatches: 2, failureAfterMs: 3000 }),
   )
   const feedbackTimerRef = useRef<number | null>(null)
 

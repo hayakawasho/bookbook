@@ -29,7 +29,7 @@ function createConfig(target: HTMLElement): QuaggaJSConfigObject {
     },
     decoder: { readers: ['ean_reader'] },
     canvas: { createOverlay: false },
-    locator: { halfSample: false, patchSize: 'medium' },
+    locator: { halfSample: true, patchSize: 'medium' },
     locate: true,
     frequency: 10,
   }
