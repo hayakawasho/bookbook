@@ -25,7 +25,7 @@ export function HomeScreen() {
     [],
   )
 
-  const lookup = useBookLookup()
+  const lookup = useBookLookup({ showToast })
   const coverCapture = useCoverCapture()
 
   const capture = useBarcodeCapture({

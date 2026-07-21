@@ -8,6 +8,13 @@ import { createTestDeps } from './test/testDeps'
 
 describe('App', () => {
   describe('モックセッション', () => {
+    async function searchByIsbn(isbn: string) {
+      const user = userEvent.setup()
+      const input = await screen.findByPlaceholderText(/ISBNを入力/)
+      await user.type(input, isbn)
+      await user.click(screen.getByRole('button', { name: '検索' }))
+    }
+
     it('起動時にホームのスキャン UI が表示される', async () => {
       render(
         <MemoryRouter>
@@ -103,6 +110,49 @@ describe('App', () => {
 
       const banner = await screen.findByRole('banner')
       expect(within(banner).getByText('貸出履歴')).toBeInTheDocument()
+    })
+
+    it('不正な ISBN の検索時にエラートーストを表示する', async () => {
+      render(
+        <MemoryRouter>
+          <App {...createTestDeps()} />
+        </MemoryRouter>,
+      )
+
+      await searchByIsbn('invalid')
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'バーコードを読み取れませんでした。もう一度かざしてください',
+      )
+    })
+
+    it('書籍が見つからないときにエラートーストを表示する', async () => {
+      render(
+        <MemoryRouter>
+          <App {...createTestDeps()} />
+        </MemoryRouter>,
+      )
+
+      await searchByIsbn('9784873119991')
+
+      expect(await screen.findByRole('status')).toHaveTextContent('本の情報が見つかりませんでした')
+    })
+
+    it('書籍検索が失敗したときにエラートーストを表示する', async () => {
+      const deps = createTestDeps()
+      deps.repositories.bookRepo.findByIsbn = () => Promise.reject(new Error('network error'))
+
+      render(
+        <MemoryRouter>
+          <App {...deps} />
+        </MemoryRouter>,
+      )
+
+      await searchByIsbn('9784873119038')
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        '本の情報を確認できませんでした。時間を置いて、もう一度お試しください',
+      )
     })
   })
 })
