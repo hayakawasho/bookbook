@@ -32,15 +32,17 @@ export function BookItem({ book, cover, prependMeta, action }: BookItemProps) {
       <div className="shrink-0 w-[103px]">
         {cover ?? <BookCover src={book.cover.src} alt={book.title} />}
       </div>
-      <div className="flex-1 min-w-0 flex flex-col gap-1">
+      <div className="flex-1 min-w-0 flex flex-col gap-2">
         {prependMeta}
         <p className="m-0 text-sm font-semibold leading-[22px] text-text break-words">
           {book.title}
         </p>
-        {book.author && <p className="m-0 text-xs leading-[17px] text-text-muted">{book.author}</p>}
-        {book.publisher && (
-          <p className="m-0 text-xs leading-[17px] text-text-muted">{book.publisher}</p>
-        )}
+        <div className='grid gap-1'>
+          {book.author && <p className="m-0 text-xs leading-[17px] text-text-muted">{book.author}</p>}
+          {book.publisher && (
+            <p className="m-0 text-xs leading-[17px] text-text-muted">{book.publisher}</p>
+          )}
+        </div>
         {action && <div className="mt-2 w-full min-w-0">{action}</div>}
       </div>
     </div>

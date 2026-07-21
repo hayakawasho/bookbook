@@ -31,23 +31,27 @@ export function HomeExistingBookSheet({ book, onAddCopy, onCheckout }: HomeExist
     <>
       <div className="flex gap-[29px] items-start px-[22px] pt-8 pb-2">
         <BookCover src={book.cover.src} alt="" />
-        <div className="flex-1 min-w-0 flex flex-col gap-2 pt-0.5">
-          <p className="m-0 text-sm font-semibold leading-[22px] text-text break-words">
-            {book.title}
-          </p>
-          {attributionLabel && (
-            <p className="m-0 text-xs leading-[17px] text-text-muted">{attributionLabel}</p>
-          )}
-          <BookStockSummaryLines book={book} />
+        <div className="flex-1 min-w-0 pt-0.5">
+          <div className="grid gap-2">
+            <p className="m-0 text-sm font-semibold leading-[22px] text-text break-words">
+              {book.title}
+            </p>
+            {attributionLabel && (
+              <p className="m-0 text-xs leading-[17px] text-text-muted">{attributionLabel}</p>
+            )}
+          </div>
+          <div className="flex items-start justify-between mt-[26px]">
+            <BookStockSummaryLines book={book} />
+            <button
+              type="button"
+              className="shrink-0 min-h-[40px] h-fit px-2.5 py-2 bg-surface text-text text-xs font-semibold tracking-tight cursor-pointer inline-flex items-center gap-1.5"
+              onClick={() => onAddCopy(book)}
+            >
+              追加
+              <IconPlus size={13} className="w-[1em] f-[1em] text-[.75em]" />
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className="shrink-0 min-h-[40px] h-fit mt-1 px-2.5 py-2 bg-surface text-text text-xs font-semibold tracking-tight cursor-pointer inline-flex items-center gap-1.5"
-          onClick={() => onAddCopy(book)}
-        >
-          追加
-          <IconPlus size={13} className="w-[1em] f-[1em] text-[.75em]" />
-        </button>
       </div>
       <div className="px-[22px] pb-8 pt-5 absolute bottom-0 w-full">
         <button
@@ -75,23 +79,21 @@ export function HomeExternalBookSheet({
 
   return (
     <>
-      <div className="flex gap-[29px] items-start px-[22px] pt-0 pb-2">
-        <BookItem
-          book={displayBook}
-          cover={
-            showCoverCapture && !coverPreviewSrc ? (
-              <button
-                type="button"
-                className="w-[103px] h-[145px] bg-white text-[#757575] cursor-pointer inline-flex flex-col items-center justify-center gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <IconPhotoCamera size={28} />
-                <span className="text-xs">表紙を撮影</span>
-              </button>
-            ) : undefined
-          }
-        />
-      </div>
+      <BookItem
+        book={displayBook}
+        cover={
+          showCoverCapture && !coverPreviewSrc ? (
+            <button
+              type="button"
+              className="w-[103px] h-[145px] bg-white text-[#757575] cursor-pointer inline-flex flex-col items-center justify-center gap-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <IconPhotoCamera size={28} />
+              <span className="text-xs">表紙を撮影</span>
+            </button>
+          ) : undefined
+        }
+      />
       {showCoverCapture && (
         <input
           ref={fileInputRef}
