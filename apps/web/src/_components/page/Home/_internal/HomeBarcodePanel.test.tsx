@@ -13,14 +13,14 @@ const baseProps = {
 }
 
 describe('HomeBarcodePanel', () => {
-  it('Quagga2 では DOM のスキャン枠を表示する', () => {
-    const { container } = render(<HomeBarcodePanel {...baseProps} showScanGuide />)
+  it('カメラ表示中は DOM のスキャン枠を表示する', () => {
+    const { container } = render(<HomeBarcodePanel {...baseProps} />)
 
     expect(container.querySelector('.barcode-scan-guide')).toBeInTheDocument()
   })
 
-  it('html5-qrcode ではライブラリ側のスキャン枠を使う', () => {
-    const { container } = render(<HomeBarcodePanel {...baseProps} showScanGuide={false} />)
+  it('カメラ非表示中は DOM のスキャン枠を表示しない', () => {
+    const { container } = render(<HomeBarcodePanel {...baseProps} cameraOpen={false} />)
 
     expect(container.querySelector('.barcode-scan-guide')).not.toBeInTheDocument()
   })

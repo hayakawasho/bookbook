@@ -6,7 +6,6 @@
   object-fit: cover;
 }
 
-#qr-shaded-region,
 .barcode-scan-guide {
   border: none !important;
   width: min(calc(287px / 375px * 100%), 287px);
@@ -19,18 +18,4 @@
 .barcode-scan-guide {
   z-index: 1;
   border: 10px solid var(--color-accent) !important;
-}
-
-#qr-shaded-region:before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: 10px solid var(--color-accent);
-}
-
-#qr-shaded-region > div {
-  display: none !important;
 }
