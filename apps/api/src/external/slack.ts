@@ -82,7 +82,8 @@ export function buildSlackPayload(
             value: book.description ? trimText(book.description, DESCRIPTION_LIMIT) : ' - ',
           },
         ],
-        image_url: book.coverSrc,
+        // 相対パス（自前サムネイル等）は Slack から解決できないため添付しない
+        image_url: book.coverSrc?.startsWith('/') ? undefined : book.coverSrc,
       },
     ],
     blocks: [
