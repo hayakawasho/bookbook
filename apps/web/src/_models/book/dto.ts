@@ -6,6 +6,7 @@ export type BookBibliographyDto = {
   publishedDate?: string
   cover: { src?: string }
   description?: string
+  pageCount?: number
 }
 
 export type BookDto = BookBibliographyDto & {

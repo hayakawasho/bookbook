@@ -9,6 +9,7 @@ export type ExternalBookInfo = {
   publishedDate?: Date
   cover: { src?: string }
   description?: string
+  pageCount?: number
 }
 
 export type FindByIsbnResult =

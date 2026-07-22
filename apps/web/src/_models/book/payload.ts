@@ -5,6 +5,7 @@ export type BookPayload = {
   publishedDate?: Date
   cover: { src?: string }
   description?: string
+  pageCount?: number
   availableCount: number
   total: number
 }
@@ -15,8 +16,27 @@ export type BookSnapshot = BookPayload & {
 }
 
 export function pickBookPayload(snapshot: BookSnapshot): BookPayload {
-  const { title, author, publisher, publishedDate, cover, description, availableCount, total } =
-    snapshot
+  const {
+    title,
+    author,
+    publisher,
+    publishedDate,
+    cover,
+    description,
+    pageCount,
+    availableCount,
+    total,
+  } = snapshot
 
-  return { title, author, publisher, publishedDate, cover, description, availableCount, total }
+  return {
+    title,
+    author,
+    publisher,
+    publishedDate,
+    cover,
+    description,
+    pageCount,
+    availableCount,
+    total,
+  }
 }

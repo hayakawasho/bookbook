@@ -40,6 +40,7 @@ export type BookJson = {
   publishedDate?: string
   cover: { src?: string }
   description?: string
+  pageCount?: number
   availableCount: number
   total: number
 }
@@ -65,6 +66,7 @@ export function bookFromRow(row: BookRow): BookJson {
     publishedDate: row.published_date ?? undefined,
     cover: { src: row.cover_src ?? undefined },
     description: row.description ?? undefined,
+    pageCount: row.page_count ?? undefined,
     availableCount: row.available_count,
     total: row.total,
   }
@@ -136,7 +138,9 @@ export async function insertBook(
     title: string
     author?: string
     publisher?: string
+    publishedDate?: string
     description?: string
+    pageCount?: number
     coverSrc?: string
     location: string
   },
@@ -144,8 +148,8 @@ export async function insertBook(
   // 論理削除済みの同一 isbn/location の復活は将来課題（現状は無視して新規登録を諦める）
   const res = await db
     .prepare(
-      `INSERT INTO books (isbn, location, title, author, publisher, description, cover_src, total)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1)
+      `INSERT INTO books (isbn, location, title, author, publisher, published_date, description, page_count, cover_src, total)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1)
        ON CONFLICT (isbn, location) DO NOTHING`,
     )
     .bind(
@@ -154,7 +158,9 @@ export async function insertBook(
       book.title,
       book.author ?? null,
       book.publisher ?? null,
+      book.publishedDate ?? null,
       book.description ?? null,
+      book.pageCount ?? null,
       book.coverSrc ?? null,
     )
     .run()
@@ -191,6 +197,7 @@ export async function updateBookMetadata(
     publisher?: string
     description?: string
     published_date?: string
+    page_count?: number
     cover_src?: string | null
   },
 ): Promise<void> {
@@ -201,6 +208,7 @@ export async function updateBookMetadata(
     'publisher',
     'description',
     'published_date',
+    'page_count',
     'cover_src',
   ] as const
 

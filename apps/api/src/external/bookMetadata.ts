@@ -10,6 +10,7 @@ export type ExternalBookPayload = {
   publisher?: string
   publishedDate?: string
   description?: string
+  pageCount?: number
   cover: { src?: string }
 }
 
@@ -122,6 +123,7 @@ export type BookMetadataDbPatch = {
   publisher?: string
   description?: string
   published_date?: string
+  page_count?: number
   cover_src?: string | null
 }
 
@@ -136,6 +138,7 @@ export function metadataPatchFromExternal(
     publisher: external.publisher,
     description: external.description,
     published_date: external.publishedDate,
+    page_count: external.pageCount,
   }) as BookMetadataDbPatch
 
   if (cover?.clear) {
@@ -201,6 +204,7 @@ type GoogleVolumeItem = {
     publisher?: string
     publishedDate?: string
     description?: string
+    pageCount?: number
     imageLinks?: { thumbnail?: string }
   }
 }
@@ -254,6 +258,7 @@ function convertGoogleVolume(isbn: string, item: GoogleVolumeItem): ExternalBook
     publisher: vi?.publisher,
     publishedDate: parseFlexibleDate(vi?.publishedDate),
     description: vi?.description,
+    pageCount: vi?.pageCount,
     cover: { src: vi?.imageLinks?.thumbnail },
   }
 }

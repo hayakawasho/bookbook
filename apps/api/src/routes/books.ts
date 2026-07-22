@@ -92,6 +92,16 @@ booksRoutes.get('/:isbn', async (c) => {
   return c.json({ status: 'notfound' }, 404)
 })
 
+// クライアントは Date.toISOString() で送る前提。roundtrip 一致で形式と実在日付を同時に検証する
+function isIsoTimestampString(value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  const parsed = new Date(value)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString() === value
+}
+
 // POST /api/books
 booksRoutes.post('/', async (c) => {
   const body = await c.req.json<{
@@ -99,13 +109,23 @@ booksRoutes.post('/', async (c) => {
     title: string
     author?: string
     publisher?: string
+    publishedDate?: string
     cover?: { src?: string }
     description?: string
+    pageCount?: number
     location: string
   }>()
 
   if (!isLocation(body.location)) {
     return c.json({ error: 'unknown location' }, 400)
+  }
+
+  if (body.pageCount !== undefined && (!Number.isInteger(body.pageCount) || body.pageCount <= 0)) {
+    return c.json({ error: 'pageCount must be a positive integer' }, 400)
+  }
+
+  if (body.publishedDate !== undefined && !isIsoTimestampString(body.publishedDate)) {
+    return c.json({ error: 'publishedDate must be an ISO 8601 date string' }, 400)
   }
 
   // クライアント指定の表紙 URL は自前サムネイル or 許可ホストのみ受け付ける（許可外は表紙なし扱い）
@@ -128,7 +148,9 @@ booksRoutes.post('/', async (c) => {
     title: body.title,
     author: body.author || undefined,
     publisher: body.publisher || undefined,
+    publishedDate: body.publishedDate || undefined,
     description: body.description || undefined,
+    pageCount: body.pageCount ?? undefined,
     coverSrc,
     location: body.location,
   })

@@ -322,6 +322,101 @@ describe('POST /api/books', () => {
     expect(row?.cover_src).toBe('https://cover.openbd.jp/cover.jpg')
   })
 
+  it('publishedDate と pageCount が保存され GET で返る', async () => {
+    const cookie = await sessionCookie()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })))
+
+    const res = await fetchWithExecutionContext(
+      new Request('http://localhost/api/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({
+          isbn: '1234567890123',
+          title: 'テスト本',
+          publishedDate: '2024-05-01T00:00:00.000Z',
+          pageCount: 320,
+          cover: {},
+          location: 'daikanyama',
+        }),
+      }),
+    )
+    expect(res.status).toBe(201)
+
+    const row = await env.DB.prepare('SELECT * FROM books WHERE isbn = ?')
+      .bind('1234567890123')
+      .first<{ published_date: string | null; page_count: number | null }>()
+    expect(row?.published_date).toBe('2024-05-01T00:00:00.000Z')
+    expect(row?.page_count).toBe(320)
+
+    const getRes = await app.fetch(
+      new Request('http://localhost/api/books/1234567890123?location=daikanyama', {
+        headers: { Cookie: cookie },
+      }),
+      env,
+    )
+    expect(getRes.status).toBe(200)
+    const json = (await getRes.json()) as {
+      status: string
+      book: { publishedDate?: string; pageCount?: number }
+    }
+    expect(json.status).toBe('registered')
+    expect(json.book.publishedDate).toBe('2024-05-01T00:00:00.000Z')
+    expect(json.book.pageCount).toBe(320)
+  })
+
+  it('pageCount が正の整数でなければ 400', async () => {
+    const cookie = await sessionCookie()
+    for (const pageCount of [0, -1, 1.5, '320']) {
+      const res = await app.fetch(
+        new Request('http://localhost/api/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Cookie: cookie },
+          body: JSON.stringify({
+            isbn: '1234567890123',
+            title: 'テスト本',
+            pageCount,
+            location: 'daikanyama',
+          }),
+        }),
+        env,
+      )
+      expect(res.status).toBe(400)
+    }
+  })
+
+  it('publishedDate が ISO 8601 文字列でなければ 400', async () => {
+    const cookie = await sessionCookie()
+    const invalidValues = [
+      'not-a-date',
+      123,
+      0,
+      false,
+      null,
+      '',
+      '2024',
+      '05/01/2024',
+      '2024-05-01',
+      // 存在しない日付（Date.parse は 3/2 に正規化して通してしまう）
+      '2024-02-31T00:00:00.000Z',
+    ]
+    for (const publishedDate of invalidValues) {
+      const res = await app.fetch(
+        new Request('http://localhost/api/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Cookie: cookie },
+          body: JSON.stringify({
+            isbn: '1234567890123',
+            title: 'テスト本',
+            publishedDate,
+            location: 'daikanyama',
+          }),
+        }),
+        env,
+      )
+      expect(res.status).toBe(400)
+    }
+  })
+
   it('同じ isbn/location は重複登録されない', async () => {
     await seedBook({ isbn: '1234567890123' })
     const cookie = await sessionCookie()

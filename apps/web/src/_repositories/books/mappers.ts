@@ -14,6 +14,7 @@ export function toBookInput(dto: BookDto) {
     publishedDate: parseDateOrUndefined(dto.publishedDate),
     cover: dto.cover,
     description: dto.description,
+    pageCount: dto.pageCount,
     availableCount: dto.availableCount,
     total: dto.total,
   }
@@ -28,5 +29,6 @@ export function toExternalBookInfo(dto: ExternalBookDto): ExternalBookInfo {
     publishedDate: parseDateOrUndefined(dto.publishedDate),
     cover: dto.cover,
     description: dto.description,
+    pageCount: dto.pageCount,
   }
 }
