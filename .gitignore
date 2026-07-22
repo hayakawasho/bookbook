@@ -21,3 +21,7 @@ seed.sql
 
 # Wrangler ローカル状態
 .wrangler
+
+.superpowers
+
+*.sql
