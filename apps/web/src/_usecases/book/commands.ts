@@ -23,7 +23,7 @@ export async function addNewBook(
     const created = await deps.bookRepo.findByIsbn(book.isbn, location)
 
     if (created.status === 'registered') {
-      await Promise.all([
+      await Promise.allSettled([
         deps.mutator.mutateItem(String(created.book.id), created, false),
         deps.mutator.mutateAllList(),
       ])
@@ -31,7 +31,7 @@ export async function addNewBook(
       return useCaseResultOk(created.book)
     }
 
-    await Promise.all([
+    await Promise.allSettled([
       deps.mutator.mutateItem(book.isbn, undefined, true),
       deps.mutator.mutateAllList(),
     ])
@@ -52,7 +52,7 @@ export async function undoNewBook(
 
     await deps.bookRepo.deleteItem(isbn, location)
 
-    await Promise.all([
+    await Promise.allSettled([
       deps.mutator.mutateItem(isbn, undefined, true),
       deps.mutator.mutateAllList(),
     ])
@@ -69,18 +69,12 @@ export async function checkoutBook(
   location: Location,
 ): Promise<UseCaseResult<true, Error>> {
   try {
-    const updated = Book.checkout(book)
     const isbn = String(book.id)
 
     await deps.historyRepo.createItem(isbn, location)
 
-    // createItem 成功後は貸出履歴キャッシュを必ず再検証（findByIsbn が未登録でも stale にしない）
-    await deps.mutator.mutateManyHistory()
-
-    await Promise.all([
-      deps.mutator.mutateItem(isbn, { status: 'registered', book: updated }, false),
-      deps.mutator.mutateListItem(isbn, updated),
-    ])
+    // 並行操作で在庫がずれるためローカル計算せず再検証する。同期失敗は業務結果に影響させない
+    await Promise.allSettled([deps.mutator.mutateManyHistory(), deps.mutator.revalidateBook(isbn)])
 
     return useCaseResultOk(true)
   } catch (e) {
@@ -96,10 +90,11 @@ export async function restockBook(
   try {
     const updated = await deps.bookRepo.addCopy(String(book.id), location)
 
-    await Promise.all([
+    await Promise.allSettled([
       deps.mutator.mutateItem(String(book.id), { status: 'registered', book: updated }, false),
       deps.mutator.mutateListItem(String(book.id), updated),
-      deps.mutator.mutateBorrowingItems(),
+      // 通常履歴のスナップショットにも total/availableCount が含まれるため両方再検証する
+      deps.mutator.mutateManyHistory(),
     ])
 
     return useCaseResultOk(true)
@@ -115,17 +110,11 @@ export async function returnBook(
   location: Location,
 ): Promise<UseCaseResult<true, Error>> {
   try {
-    const updated = Book.return(book)
     const isbn = String(book.id)
 
     await deps.historyRepo.returnItem(historyId, location)
 
-    await deps.mutator.mutateManyHistory()
-
-    await Promise.all([
-      deps.mutator.mutateItem(isbn, { status: 'registered', book: updated }, false),
-      deps.mutator.mutateListItem(isbn, updated),
-    ])
+    await Promise.allSettled([deps.mutator.mutateManyHistory(), deps.mutator.revalidateBook(isbn)])
 
     return useCaseResultOk(true)
   } catch (e) {
@@ -143,10 +132,8 @@ export async function uploadBookCover(
     const { src } = await deps.bookRepo.uploadCoverImage(isbn, image)
     const updated = Book.create({ ...book, cover: { src } })
 
-    await Promise.all([
-      deps.mutator.mutateItem(isbn, { status: 'registered', book: updated }, false),
-      deps.mutator.mutateListItem(isbn, updated),
-    ])
+    // book は取得時点のスナップショットで在庫が古い可能性があるため、確定書き込みせず再検証する
+    await Promise.allSettled([deps.mutator.revalidateBook(isbn)])
 
     return useCaseResultOk(updated)
   } catch (e) {
@@ -161,18 +148,11 @@ export async function undoReturnBook(
   location: Location,
 ): Promise<UseCaseResult<true, Error>> {
   try {
-    // book は借りていた時点のスナップショットなので、貸出中に戻った後の在庫はそのままの値になる
-    const updated = book
     const isbn = String(book.id)
 
     await deps.historyRepo.undoReturnItem(historyId, location)
 
-    await deps.mutator.mutateManyHistory()
-
-    await Promise.all([
-      deps.mutator.mutateItem(isbn, { status: 'registered', book: updated }, false),
-      deps.mutator.mutateListItem(isbn, updated),
-    ])
+    await Promise.allSettled([deps.mutator.mutateManyHistory(), deps.mutator.revalidateBook(isbn)])
 
     return useCaseResultOk(true)
   } catch (e) {

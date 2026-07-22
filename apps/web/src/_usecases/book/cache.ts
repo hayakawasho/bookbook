@@ -36,13 +36,13 @@ export function useBookCacheMutator() {
           revalidate: revalidate ?? newData == null,
         })
       },
-      mutateBorrowingItems: () => {
-        return mutate(historyCacheKeyGenerator.list(loc, { isDone: false }))
-      },
+      // revalidateIfStale: false のため、非マウント中の画面はデータごと消して次回マウント時に必ず fetch させる
       mutateManyHistory: () => {
         return Promise.all([
-          mutate(historyCacheKeyGenerator.list(loc, {})),
-          mutate(historyCacheKeyGenerator.list(loc, { isDone: false })),
+          mutate(historyCacheKeyGenerator.list(loc, {}), undefined, { revalidate: true }),
+          mutate(historyCacheKeyGenerator.list(loc, { isDone: false }), undefined, {
+            revalidate: true,
+          }),
         ])
       },
       mutateListItem: (isbn: string, patch: Partial<BookType>) => {
@@ -62,10 +62,26 @@ export function useBookCacheMutator() {
           { revalidate: false },
         )
       },
+      revalidateBook: (isbn: string) => {
+        return Promise.all([
+          mutate(bookCacheKeyGenerator.detail(loc, isbn), undefined, { revalidate: true }),
+          mutate(
+            (key): boolean => {
+              return isBookListCacheKey(key, loc)
+            },
+            undefined,
+            { revalidate: true },
+          ),
+        ])
+      },
       mutateAllList: () => {
-        return mutate((key): boolean => {
-          return isBookListCacheKey(key, loc)
-        })
+        return mutate(
+          (key): boolean => {
+            return isBookListCacheKey(key, loc)
+          },
+          undefined,
+          { revalidate: true },
+        )
       },
     }),
     [loc, mutate],

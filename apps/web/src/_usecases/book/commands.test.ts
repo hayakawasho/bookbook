@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { Book, toBookId } from '../../_models/book'
 
-import { undoReturnBook } from './commands'
+import { checkoutBook, returnBook, undoReturnBook } from './commands'
 
 import type { BookDeps } from './commands'
 
@@ -18,7 +18,7 @@ function createDeps(): BookDeps {
     },
     historyRepo: {
       findMany: vi.fn(),
-      createItem: vi.fn(),
+      createItem: vi.fn().mockResolvedValue(undefined),
       returnItem: vi.fn().mockResolvedValue(undefined),
       undoReturnItem: vi.fn().mockResolvedValue(undefined),
     },
@@ -27,43 +27,92 @@ function createDeps(): BookDeps {
       mutateListItem: vi.fn().mockResolvedValue(undefined),
       mutateAllList: vi.fn().mockResolvedValue(undefined),
       mutateManyHistory: vi.fn().mockResolvedValue(undefined),
+      revalidateBook: vi.fn().mockResolvedValue(undefined),
     },
   } as unknown as BookDeps
 }
 
-describe('undoReturnBook', () => {
-  it('借出時点のスナップショットが在庫0でも取り消しできる', async () => {
-    const deps = createDeps()
-    const book = Book.create({
-      id: toBookId('9784000000000'),
-      title: 'テスト本',
-      cover: {},
-      availableCount: 0,
-      total: 1,
-    })
+function createBook(availableCount: number, total: number): Book {
+  return Book.create({
+    id: toBookId('9784000000000'),
+    title: 'テスト本',
+    cover: {},
+    availableCount,
+    total,
+  })
+}
 
-    const result = await undoReturnBook(deps, '1', book, 'daikanyama')
+describe('checkoutBook', () => {
+  it('貸出成功後は在庫をローカル計算せず履歴と書籍を再検証する', async () => {
+    const deps = createDeps()
+
+    const result = await checkoutBook(deps, createBook(2, 2), 'daikanyama')
+
+    expect(result.err).toBeNull()
+    expect(deps.mutator.mutateManyHistory).toHaveBeenCalled()
+    expect(deps.mutator.revalidateBook).toHaveBeenCalledWith('9784000000000')
+    expect(deps.mutator.mutateItem).not.toHaveBeenCalled()
+    expect(deps.mutator.mutateListItem).not.toHaveBeenCalled()
+  })
+
+  it('API成功後のキャッシュ再検証が失敗しても業務結果は成功', async () => {
+    const deps = createDeps()
+    vi.mocked(deps.mutator.revalidateBook).mockRejectedValue(new Error('network'))
+
+    const result = await checkoutBook(deps, createBook(2, 2), 'daikanyama')
+
+    expect(result.err).toBeNull()
+  })
+
+  it('API失敗時はエラーを返す', async () => {
+    const deps = createDeps()
+    vi.mocked(deps.historyRepo.createItem).mockRejectedValue(new Error('409'))
+
+    const result = await checkoutBook(deps, createBook(2, 2), 'daikanyama')
+
+    expect(result.err).toBeInstanceOf(Error)
+    expect(deps.mutator.revalidateBook).not.toHaveBeenCalled()
+  })
+})
+
+describe('returnBook', () => {
+  it('返却成功後は履歴と書籍を再検証する', async () => {
+    const deps = createDeps()
+
+    const result = await returnBook(deps, '1', createBook(0, 1), 'daikanyama')
+
+    expect(result.err).toBeNull()
+    expect(deps.historyRepo.returnItem).toHaveBeenCalledWith('1', 'daikanyama')
+    expect(deps.mutator.mutateManyHistory).toHaveBeenCalled()
+    expect(deps.mutator.revalidateBook).toHaveBeenCalledWith('9784000000000')
+  })
+
+  it('API成功後のキャッシュ再検証が失敗しても業務結果は成功', async () => {
+    const deps = createDeps()
+    vi.mocked(deps.mutator.mutateManyHistory).mockRejectedValue(new Error('network'))
+
+    const result = await returnBook(deps, '1', createBook(0, 1), 'daikanyama')
+
+    expect(result.err).toBeNull()
+  })
+})
+
+describe('undoReturnBook', () => {
+  it('在庫0のスナップショットでも取り消しできる', async () => {
+    const deps = createDeps()
+
+    const result = await undoReturnBook(deps, '1', createBook(0, 1), 'daikanyama')
 
     expect(result.err).toBeNull()
     expect(deps.historyRepo.undoReturnItem).toHaveBeenCalledWith('1', 'daikanyama')
   })
 
-  it('取り消し後のキャッシュはスナップショットの在庫のまま更新する', async () => {
+  it('取り消し成功後は履歴と書籍を再検証する', async () => {
     const deps = createDeps()
-    const book = Book.create({
-      id: toBookId('9784000000000'),
-      title: 'テスト本',
-      cover: {},
-      availableCount: 1,
-      total: 2,
-    })
 
-    await undoReturnBook(deps, '1', book, 'daikanyama')
+    await undoReturnBook(deps, '1', createBook(1, 2), 'daikanyama')
 
-    expect(deps.mutator.mutateItem).toHaveBeenCalledWith(
-      '9784000000000',
-      { status: 'registered', book },
-      false,
-    )
+    expect(deps.mutator.mutateManyHistory).toHaveBeenCalled()
+    expect(deps.mutator.revalidateBook).toHaveBeenCalledWith('9784000000000')
   })
 })
