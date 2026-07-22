@@ -38,7 +38,7 @@ lint:
 	$(NPM) exec biome check .
 
 lint-fix:
-	$(NPM) exec biome check --write .
+	$(NPM) exec biome -- check --write .
 
 db-migrate:
 	cd apps/api && $(NPM) exec -- wrangler d1 migrations apply bookbook-db --local
