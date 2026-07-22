@@ -37,8 +37,10 @@ export function BookItem({ book, cover, prependMeta, action }: BookItemProps) {
         <p className="m-0 text-sm font-semibold leading-[22px] text-text break-words">
           {book.title}
         </p>
-        <div className='grid gap-1'>
-          {book.author && <p className="m-0 text-xs leading-[17px] text-text-muted">{book.author}</p>}
+        <div className="grid gap-1">
+          {book.author && (
+            <p className="m-0 text-xs leading-[17px] text-text-muted">{book.author}</p>
+          )}
           {book.publisher && (
             <p className="m-0 text-xs leading-[17px] text-text-muted">{book.publisher}</p>
           )}
