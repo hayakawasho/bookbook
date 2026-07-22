@@ -161,8 +161,8 @@ export async function undoReturnBook(
   location: Location,
 ): Promise<UseCaseResult<true, Error>> {
   try {
-    // 返却取り消し = 再び貸出中に戻るため、在庫は checkout と同じ方向に動く
-    const updated = Book.checkout(book)
+    // book は借りていた時点のスナップショットなので、貸出中に戻った後の在庫はそのままの値になる
+    const updated = book
     const isbn = String(book.id)
 
     await deps.historyRepo.undoReturnItem(historyId, location)
