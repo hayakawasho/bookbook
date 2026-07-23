@@ -36,6 +36,7 @@ export type BooksBindings = {
   DB: D1Database
   THUMBNAILS: R2Bucket
   SLACK_WEBHOOK_URL: string
+  GOOGLE_BOOKS_API_KEY?: string
   RAKUTEN_APP_ID?: string
   RAKUTEN_ACCESS_KEY?: string
   RAKUTEN_SITE_URL?: string
@@ -79,6 +80,7 @@ booksRoutes.get('/:isbn', async (c) => {
   }
 
   const external = await fetchExternalBookMetadata(isbn, {
+    googleApiKey: c.env.GOOGLE_BOOKS_API_KEY,
     rakuten: {
       appId: c.env.RAKUTEN_APP_ID ?? '',
       accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',
@@ -282,6 +284,7 @@ booksRoutes.patch('/:isbn/metadata', async (c) => {
   }
 
   const external = await fetchExternalBookMetadata(isbn, {
+    googleApiKey: c.env.GOOGLE_BOOKS_API_KEY,
     rakuten: {
       appId: c.env.RAKUTEN_APP_ID ?? '',
       accessKey: c.env.RAKUTEN_ACCESS_KEY ?? '',

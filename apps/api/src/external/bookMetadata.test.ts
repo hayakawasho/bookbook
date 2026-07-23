@@ -235,3 +235,17 @@ describe('fetchExternalBookMetadata の楽天連携', () => {
     expect(calledUrls.some((url) => url.includes('openapi.rakuten.co.jp'))).toBe(false)
   })
 })
+
+describe('fetchExternalBookMetadata の Google Books 連携', () => {
+  it('Google Books API キーを検索リクエストへ付与する', async () => {
+    const fetchMock = stubFetch({})
+
+    await fetchExternalBookMetadata(ISBN, { googleApiKey: 'google-books-key' })
+
+    const googleCall = fetchMock.mock.calls.find(([input]) =>
+      String(input).includes('googleapis.com/books'),
+    )
+    expect(googleCall).toBeDefined()
+    expect(new URL(String(googleCall?.[0])).searchParams.get('key')).toBe('google-books-key')
+  })
+})

@@ -27,6 +27,8 @@ type Bindings = {
   ALLOWED_EMAILS?: string
   /** ログイン後リダイレクト先パス（既定 `/`） */
   AUTH_SUCCESS_REDIRECT?: string
+  /** Google Books API のプロジェクト識別・quota用 APIキー */
+  GOOGLE_BOOKS_API_KEY?: string
   /** 楽天ブックス書籍検索 API の applicationId（省略可: 省略時は表紙候補から楽天を除外） */
   RAKUTEN_APP_ID?: string
   /** 楽天ブックス書籍検索 API の accessKey */

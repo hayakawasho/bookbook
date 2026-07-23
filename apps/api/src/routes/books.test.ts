@@ -181,6 +181,7 @@ describe('GET /api/books/:isbn', () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input)
         if (url.includes('googleapis.com/books')) {
+          expect(new URL(url).searchParams.get('key')).toBe('test-google-books-key')
           return new Response(
             JSON.stringify({
               totalItems: 1,
@@ -200,7 +201,7 @@ describe('GET /api/books/:isbn', () => {
       new Request('http://localhost/api/books/9784873119038?location=daikanyama', {
         headers: { Cookie: cookie },
       }),
-      env,
+      { ...env, GOOGLE_BOOKS_API_KEY: 'test-google-books-key' },
     )
     expect(res.status).toBe(200)
     const body = (await res.json()) as { status: string }

@@ -339,8 +339,16 @@ function convertNdlOpenSearch(isbn: string, xml: string): ExternalBookPayload | 
   }
 }
 
-async function fetchGoogleVolume(isbn: string): Promise<ExternalBookPayload | null> {
-  const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=1`
+async function fetchGoogleVolume(
+  isbn: string,
+  apiKey?: string,
+): Promise<ExternalBookPayload | null> {
+  const url = new URL('https://www.googleapis.com/books/v1/volumes')
+  url.searchParams.set('q', `isbn:${isbn}`)
+  url.searchParams.set('maxResults', '1')
+  if (apiKey?.trim()) {
+    url.searchParams.set('key', apiKey.trim())
+  }
   const res = await fetch(url)
   if (!res.ok) {
     return null
@@ -462,14 +470,14 @@ async function mergeGoogleAndOpenBd(
 
 export async function fetchExternalBookMetadata(
   isbn: string,
-  options?: { rakuten?: RakutenCredentials },
+  options?: { googleApiKey?: string; rakuten?: RakutenCredentials },
 ): Promise<ExternalBookPayload | null> {
   const rakuten = options?.rakuten
   const hasRakutenCredentials = Boolean(
     rakuten?.appId.trim() && rakuten.accessKey.trim() && rakuten.siteUrl.trim(),
   )
   const [google, openBd, rakutenSrc] = await Promise.all([
-    fetchGoogleVolume(isbn),
+    fetchGoogleVolume(isbn, options?.googleApiKey),
     fetchOpenBd(isbn),
     hasRakutenCredentials && rakuten
       ? fetchRakutenCoverSrc(isbn, rakuten)
