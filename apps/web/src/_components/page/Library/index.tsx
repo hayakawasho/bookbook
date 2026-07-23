@@ -12,7 +12,11 @@ export function LibraryScreen() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
 
-  const { data: books = [], isLoading, error } = useBookItems(query)
+  const { data, isLoading, error } = useBookItems(query)
+
+  // 再検証中でも保持データがあれば表示し続ける（キャッシュ破棄+再検証によるちらつき防止）
+  const books = data ?? []
+  const showLoading = isLoading && data === undefined
 
   const isEmptyLayout = books.length === 0
 
@@ -32,7 +36,7 @@ export function LibraryScreen() {
         }
       />
       <LibrarySearchBar query={query} onChangeQuery={setQuery} />
-      <LibraryListBody books={books} query={query} isLoading={isLoading} error={error} />
+      <LibraryListBody books={books} query={query} isLoading={showLoading} error={error} />
     </div>
   )
 }
